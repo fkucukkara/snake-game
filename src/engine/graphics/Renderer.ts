@@ -5,7 +5,11 @@ import {
   AmbientLight,
   DirectionalLight,
   Color,
-  Vector3
+  Vector3,
+  PCFSoftShadowMap,
+  Fog,
+  HemisphereLight,
+  PointLight
 } from 'three';
 
 /**
@@ -15,7 +19,7 @@ export class Renderer {
   private renderer: WebGLRenderer;
   private scene: Scene;
   private camera: PerspectiveCamera;
-  private lights: (AmbientLight | DirectionalLight)[] = [];
+  private lights: (AmbientLight | DirectionalLight | HemisphereLight | PointLight)[] = [];
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ 
@@ -35,19 +39,32 @@ export class Renderer {
   private initialize(): void {
     // Renderer setup
     this.renderer.setSize(800, 600);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setClearColor(new Color(0x1a1a2e), 1);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setClearColor(new Color(0x0a0a1a), 1);
+    
+    // Enhanced shadow settings
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    
+    // Enable tone mapping for better colors
+    this.renderer.toneMapping = 1; // ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.2;
+    
+    // Enable physically correct lights
+    this.renderer.useLegacyLights = false;
 
     // Camera setup
     this.camera.fov = 75;
     this.camera.aspect = 800 / 600;
     this.camera.near = 0.1;
     this.camera.far = 1000;
-    this.camera.position.set(0, 15, 15);
+    this.camera.position.set(0, 20, 20);
     this.camera.lookAt(0, 0, 0);
 
-    // Setup lighting
+    // Add atmospheric fog
+    this.scene.fog = new Fog(0x0a0a1a, 20, 100);
+
+    // Setup enhanced lighting
     this.setupLighting();
 
     // Handle window resize
@@ -58,28 +75,41 @@ export class Renderer {
    * Setup scene lighting
    */
   private setupLighting(): void {
-    // Ambient light for general illumination
-    const ambientLight = new AmbientLight(0x404040, 0.6);
+    // Hemisphere light for natural sky/ground lighting
+    const hemisphereLight = new HemisphereLight(0x4488bb, 0x002244, 0.3);
+    this.scene.add(hemisphereLight);
+    this.lights.push(hemisphereLight);
+
+    // Main directional light (sun)
+    const mainLight = new DirectionalLight(0xffffff, 1.5);
+    mainLight.position.set(10, 20, 5);
+    mainLight.castShadow = true;
+    
+    // Enhanced shadow settings
+    mainLight.shadow.camera.near = 0.1;
+    mainLight.shadow.camera.far = 100;
+    mainLight.shadow.camera.left = -25;
+    mainLight.shadow.camera.right = 25;
+    mainLight.shadow.camera.top = 25;
+    mainLight.shadow.camera.bottom = -25;
+    mainLight.shadow.mapSize.width = 4096;
+    mainLight.shadow.mapSize.height = 4096;
+    mainLight.shadow.radius = 8;
+    mainLight.shadow.blurSamples = 25;
+
+    this.scene.add(mainLight);
+    this.lights.push(mainLight);
+
+    // Fill light for softer shadows
+    const fillLight = new DirectionalLight(0x4488ff, 0.3);
+    fillLight.position.set(-5, 10, -5);
+    this.scene.add(fillLight);
+    this.lights.push(fillLight);
+
+    // Ambient light for overall scene illumination
+    const ambientLight = new AmbientLight(0x404040, 0.2);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
-
-    // Directional light for shadows and depth
-    const directionalLight = new DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 10, 5);
-    directionalLight.castShadow = true;
-    
-    // Shadow camera settings
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -20;
-    directionalLight.shadow.camera.right = 20;
-    directionalLight.shadow.camera.top = 20;
-    directionalLight.shadow.camera.bottom = -20;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-
-    this.scene.add(directionalLight);
-    this.lights.push(directionalLight);
   }
 
   /**
@@ -108,11 +138,16 @@ export class Renderer {
    * Update camera position (for following snake)
    */
   updateCamera(targetPosition: Vector3): void {
-    const offset = new Vector3(0, 15, 15);
+    const offset = new Vector3(0, 20, 20);
     const newPosition = targetPosition.clone().add(offset);
     
-    this.camera.position.lerp(newPosition, 0.1);
-    this.camera.lookAt(targetPosition);
+    // Smooth camera following with easing
+    this.camera.position.lerp(newPosition, 0.05);
+    
+    // Look at target with slight offset for better view
+    const lookAtTarget = targetPosition.clone();
+    lookAtTarget.y += 1;
+    this.camera.lookAt(lookAtTarget);
   }
 
   /**

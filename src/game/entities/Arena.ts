@@ -1,12 +1,12 @@
 import {
   PlaneGeometry,
-  MeshPhongMaterial,
+  MeshStandardMaterial,
   Mesh,
   Scene,
   Color,
-  EdgesGeometry,
-  LineBasicMaterial,
-  LineSegments
+  BoxGeometry,
+  RepeatWrapping,
+  CanvasTexture
 } from 'three';
 
 /**
@@ -15,7 +15,7 @@ import {
 export class Arena {
   private scene: Scene;
   private floor!: Mesh;
-  private walls!: LineSegments;
+  private walls: Mesh[] = [];
 
   constructor(scene: Scene, size: number = 20) {
     this.scene = scene;
@@ -25,14 +25,70 @@ export class Arena {
   }
 
   /**
+   * Create a procedural floor texture
+   */
+  private createFloorTexture(): CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    
+    const context = canvas.getContext('2d')!;
+    
+    // Create a grid pattern
+    context.fillStyle = '#1a1a2e';
+    context.fillRect(0, 0, 512, 512);
+    
+    // Grid lines
+    context.strokeStyle = '#2c3e50';
+    context.lineWidth = 2;
+    
+    const gridSize = 32;
+    for (let x = 0; x <= 512; x += gridSize) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, 512);
+      context.stroke();
+    }
+    
+    for (let y = 0; y <= 512; y += gridSize) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(512, y);
+      context.stroke();
+    }
+    
+    // Add some noise/variation
+    for (let i = 0; i < 100; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const size = Math.random() * 4 + 1;
+      
+      context.fillStyle = `rgba(60, 80, 120, ${Math.random() * 0.3})`;
+      context.beginPath();
+      context.arc(x, y, size, 0, Math.PI * 2);
+      context.fill();
+    }
+    
+    return new CanvasTexture(canvas);
+  }
+
+  /**
    * Create the arena floor
    */
   private createFloor(size: number): void {
-    const geometry = new PlaneGeometry(size, size);
-    const material = new MeshPhongMaterial({
+    const geometry = new PlaneGeometry(size, size, 20, 20);
+    
+    // Create a procedural texture for the floor
+    const floorTexture = this.createFloorTexture();
+    floorTexture.wrapS = RepeatWrapping;
+    floorTexture.wrapT = RepeatWrapping;
+    floorTexture.repeat.set(2, 2);
+    
+    const material = new MeshStandardMaterial({
       color: new Color(0x2c3e50),
-      transparent: true,
-      opacity: 0.8
+      map: floorTexture,
+      roughness: 0.8,
+      metalness: 0.2
     });
     
     this.floor = new Mesh(geometry, material);
@@ -47,32 +103,48 @@ export class Arena {
    * Create arena boundary walls
    */
   private createWalls(size: number): void {
-    const wallGeometry = new PlaneGeometry(size, 2);
-    const edges = new EdgesGeometry(wallGeometry);
-    const material = new LineBasicMaterial({ 
-      color: new Color(0xffffff),
-      linewidth: 2
-    });
+    const wallHeight = 3;
+    const wallThickness = 0.5;
     
-    this.walls = new LineSegments(edges, material);
+    const wallGeometry = new BoxGeometry(wallThickness, wallHeight, size + wallThickness * 2);
+    const wallMaterial = new MeshStandardMaterial({
+      color: new Color(0x34495e),
+      roughness: 0.7,
+      metalness: 0.1,
+      emissive: new Color(0x112233),
+      emissiveIntensity: 0.1
+    });
     
     // Create 4 walls
     const wallPositions = [
-      { x: 0, y: 1, z: size/2 },   // Front wall
-      { x: 0, y: 1, z: -size/2 },  // Back wall
-      { x: size/2, y: 1, z: 0 },   // Right wall
-      { x: -size/2, y: 1, z: 0 }   // Left wall
+      { x: size/2 + wallThickness/2, y: wallHeight/2, z: 0 },   // Right wall
+      { x: -size/2 - wallThickness/2, y: wallHeight/2, z: 0 },  // Left wall
     ];
     
-    wallPositions.forEach((pos, index) => {
-      const wall = this.walls.clone();
+    wallPositions.forEach(pos => {
+      const wall = new Mesh(wallGeometry, wallMaterial.clone());
       wall.position.set(pos.x, pos.y, pos.z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       
-      // Rotate side walls
-      if (index >= 2) {
-        wall.rotation.y = Math.PI / 2;
-      }
+      this.walls.push(wall);
+      this.scene.add(wall);
+    });
+    
+    // Front and back walls (rotated)
+    const wallGeometryRotated = new BoxGeometry(size + wallThickness * 2, wallHeight, wallThickness);
+    const frontBackPositions = [
+      { x: 0, y: wallHeight/2, z: size/2 + wallThickness/2 },   // Front wall
+      { x: 0, y: wallHeight/2, z: -size/2 - wallThickness/2 }   // Back wall
+    ];
+    
+    frontBackPositions.forEach(pos => {
+      const wall = new Mesh(wallGeometryRotated, wallMaterial.clone());
+      wall.position.set(pos.x, pos.y, pos.z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       
+      this.walls.push(wall);
       this.scene.add(wall);
     });
   }
@@ -84,17 +156,22 @@ export class Arena {
     if (this.floor) {
       this.scene.remove(this.floor);
       this.floor.geometry.dispose();
-      if (this.floor.material instanceof MeshPhongMaterial) {
+      if (this.floor.material instanceof MeshStandardMaterial) {
         this.floor.material.dispose();
+        if (this.floor.material.map) {
+          this.floor.material.map.dispose();
+        }
       }
     }
     
-    if (this.walls) {
-      this.scene.remove(this.walls);
-      this.walls.geometry.dispose();
-      if (this.walls.material instanceof LineBasicMaterial) {
-        this.walls.material.dispose();
+    this.walls.forEach(wall => {
+      this.scene.remove(wall);
+      wall.geometry.dispose();
+      if (wall.material instanceof MeshStandardMaterial) {
+        wall.material.dispose();
       }
-    }
+    });
+    
+    this.walls = [];
   }
 }

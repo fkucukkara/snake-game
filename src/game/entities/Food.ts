@@ -1,11 +1,12 @@
 import {
-  SphereGeometry,
-  MeshPhongMaterial,
+  MeshStandardMaterial,
   Mesh,
   Vector3,
   Scene,
   Color,
-  MathUtils
+  MathUtils,
+  PointLight,
+  IcosahedronGeometry
 } from 'three';
 import { EventManager } from '@/engine/core/EventManager';
 import { GameConfig } from '@/types';
@@ -20,23 +21,34 @@ export class Food extends EventManager {
   private value: number = 10;
   private animationSpeed: number = 2;
   private animationTime: number = 0;
+  private glowLight!: PointLight;
 
   constructor(scene: Scene, config: GameConfig) {
     super();
     this.scene = scene;
     this.position = new Vector3();
     
-    const geometry = new SphereGeometry(config.foodSize / 2, 12, 8);
-    const material = new MeshPhongMaterial({
-      color: new Color(0xff4444),
-      emissive: new Color(0x441111)
+    // Create more interesting geometry
+    const geometry = new IcosahedronGeometry(config.foodSize / 2, 2);
+    const material = new MeshStandardMaterial({
+      color: new Color(0xff6644),
+      emissive: new Color(0x441111),
+      emissiveIntensity: 0.3,
+      roughness: 0.2,
+      metalness: 0.1
     });
     
     this.mesh = new Mesh(geometry, material);
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     
+    // Create glowing light
+    this.glowLight = new PointLight(0xff4444, 1, 8, 2);
+    this.glowLight.castShadow = false; // Disable shadows for performance
+    
     this.scene.add(this.mesh);
+    this.scene.add(this.glowLight);
+    
     this.spawn();
   }
 
@@ -66,6 +78,8 @@ export class Food extends EventManager {
       if (validPosition) {
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
+        this.glowLight.position.copy(newPosition);
+        this.glowLight.position.y += 1;
       }
       
       attempts++;
@@ -79,6 +93,8 @@ export class Food extends EventManager {
         MathUtils.randFloatSpread(10)
       );
       this.mesh.position.copy(this.position);
+      this.glowLight.position.copy(this.position);
+      this.glowLight.position.y += 1;
     }
   }
 
@@ -88,12 +104,22 @@ export class Food extends EventManager {
   update(deltaTime: number): void {
     this.animationTime += deltaTime * this.animationSpeed;
     
-    // Floating animation
-    const floatOffset = Math.sin(this.animationTime) * 0.3;
-    this.mesh.position.y = 1 + floatOffset;
+    // Enhanced floating animation with pulsing effect
+    const floatOffset = Math.sin(this.animationTime) * 0.4;
+    const pulseScale = 1 + Math.sin(this.animationTime * 3) * 0.1;
     
-    // Rotation animation
+    this.mesh.position.y = 1 + floatOffset;
+    this.mesh.scale.setScalar(pulseScale);
+    
+    // Complex rotation animation
+    this.mesh.rotation.x += deltaTime * 1;
     this.mesh.rotation.y += deltaTime * 2;
+    this.mesh.rotation.z += deltaTime * 0.5;
+    
+    // Update glow light position and intensity
+    this.glowLight.position.copy(this.mesh.position);
+    this.glowLight.position.y += 1;
+    this.glowLight.intensity = 1 + Math.sin(this.animationTime * 4) * 0.3;
   }
 
   /**
@@ -132,9 +158,15 @@ export class Food extends EventManager {
   destroy(): void {
     this.scene.remove(this.mesh);
     this.mesh.geometry.dispose();
-    if (this.mesh.material instanceof MeshPhongMaterial) {
+    if (this.mesh.material instanceof MeshStandardMaterial) {
       this.mesh.material.dispose();
     }
+    
+    // Clean up glow light
+    if (this.glowLight) {
+      this.scene.remove(this.glowLight);
+    }
+    
     this.clear();
   }
 }

@@ -1,10 +1,14 @@
 import {
   BoxGeometry,
   MeshPhongMaterial,
+  MeshStandardMaterial,
   Mesh,
   Vector3,
   Scene,
-  Color
+  Color,
+  PointLight,
+  CylinderGeometry,
+  SphereGeometry
 } from 'three';
 import { SnakeSegment, Direction, GameConfig } from '@/types';
 import { EventManager } from '@/engine/core/EventManager';
@@ -19,6 +23,7 @@ export class Snake extends EventManager {
   private isGrowing: boolean = false;
   private moveTimer: number = 0;
   private moveInterval: number = 200;
+  private headLight!: PointLight;
 
   constructor(scene: Scene, config: GameConfig) {
   super();
@@ -31,26 +36,62 @@ export class Snake extends EventManager {
    * Initialize snake with starting segments
    */
   private initialize(length: number): void {
-    const geometry = new BoxGeometry(this.segmentSize, this.segmentSize, this.segmentSize);
+    // Create head light
+    this.headLight = new PointLight(0x00ff44, 2, 10, 2);
+    this.headLight.castShadow = true;
+    this.scene.add(this.headLight);
     
     for (let i = 0; i < length; i++) {
-      const material = new MeshPhongMaterial({
-        color: i === 0 ? new Color(0x00ff00) : new Color(0x00aa00),
-      });
-      
-      const mesh = new Mesh(geometry, material);
-      mesh.position.set(-i * this.segmentSize, 0, 0);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      
-      const segment: SnakeSegment = {
-        position: mesh.position.clone(),
-        rotation: mesh.quaternion.clone(),
-        mesh
-      };
-      
-      this.segments.push(segment);
-      this.scene.add(mesh);
+      this.createSegment(i, -i * this.segmentSize, 0, 0);
+    }
+  }
+
+  /**
+   * Create a new snake segment with enhanced graphics
+   */
+  private createSegment(index: number, x: number, y: number, z: number): void {
+    const isHead = index === 0;
+    
+    // Use different geometry for head
+    const geometry = isHead 
+      ? new SphereGeometry(this.segmentSize * 0.6, 16, 12)
+      : new BoxGeometry(
+          this.segmentSize * 0.9, 
+          this.segmentSize * 0.9, 
+          this.segmentSize * 0.9
+        );
+    
+    // Calculate color gradient from head to tail
+    const colorIntensity = Math.max(0.3, 1 - (index * 0.1));
+    const baseColor = isHead ? new Color(0x00ff44) : new Color(0x00cc33);
+    baseColor.multiplyScalar(colorIntensity);
+    
+    const material = new MeshStandardMaterial({
+      color: baseColor,
+      roughness: isHead ? 0.1 : 0.4,
+      metalness: isHead ? 0.3 : 0.1,
+      emissive: isHead ? new Color(0x002211) : new Color(0x001100),
+      emissiveIntensity: isHead ? 0.2 : 0.05
+    });
+    
+    const mesh = new Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    
+    const segment: SnakeSegment = {
+      position: mesh.position.clone(),
+      rotation: mesh.quaternion.clone(),
+      mesh
+    };
+    
+    this.segments.push(segment);
+    this.scene.add(mesh);
+    
+    // Update head light position
+    if (isHead) {
+      this.headLight.position.copy(mesh.position);
+      this.headLight.position.y += 2;
     }
   }
 
@@ -98,6 +139,10 @@ export class Snake extends EventManager {
   // Head move
     head.position.copy(newHeadPosition);
     head.mesh.position.copy(newHeadPosition);
+    
+    // Update head light position
+    this.headLight.position.copy(newHeadPosition);
+    this.headLight.position.y += 2;
 
   // Body move
     for (let i = 1; i < this.segments.length; i++) {
@@ -121,8 +166,26 @@ export class Snake extends EventManager {
    * Add a new segment to the snake
    */
   private addSegment(position: Vector3): void {
-    const geometry = new BoxGeometry(this.segmentSize, this.segmentSize, this.segmentSize);
-    const material = new MeshPhongMaterial({ color: new Color(0x00aa00) });
+    const segmentIndex = this.segments.length;
+    
+    const geometry = new BoxGeometry(
+      this.segmentSize * 0.9, 
+      this.segmentSize * 0.9, 
+      this.segmentSize * 0.9
+    );
+    
+    // Calculate color gradient
+    const colorIntensity = Math.max(0.3, 1 - (segmentIndex * 0.1));
+    const baseColor = new Color(0x00cc33);
+    baseColor.multiplyScalar(colorIntensity);
+    
+    const material = new MeshStandardMaterial({
+      color: baseColor,
+      roughness: 0.4,
+      metalness: 0.1,
+      emissive: new Color(0x001100),
+      emissiveIntensity: 0.05
+    });
     
     const mesh = new Mesh(geometry, material);
     mesh.position.copy(position);
@@ -252,10 +315,15 @@ export class Snake extends EventManager {
     this.segments.forEach(segment => {
       this.scene.remove(segment.mesh);
       segment.mesh.geometry.dispose();
-      if (segment.mesh.material instanceof MeshPhongMaterial) {
+      if (segment.mesh.material instanceof MeshStandardMaterial) {
         segment.mesh.material.dispose();
       }
     });
+    
+    // Clean up head light
+    if (this.headLight) {
+      this.scene.remove(this.headLight);
+    }
     
     this.segments = [];
     this.clear();

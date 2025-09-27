@@ -1,4 +1,4 @@
-import { Renderer } from '@/engine/graphics/Renderer';
+import { Renderer, ParticleSystem } from '@/engine/graphics';
 import { InputManager } from '@/engine/input/InputManager';
 import { Snake } from '@/game/entities/Snake';
 import { Food } from '@/game/entities/Food';
@@ -12,6 +12,7 @@ export class SnakeGame {
   private snake: Snake;
   private food: Food;
   private arena: Arena;
+  private particles!: ParticleSystem;
   
   private gameState: GameState = GameState.MENU;
   private score: number = 0;
@@ -37,6 +38,9 @@ export class SnakeGame {
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new Renderer(canvas);
     this.inputManager = new InputManager();
+    
+    // Initialize particle system
+    this.particles = new ParticleSystem(this.renderer.getScene(), 2000);
     
   // Entities
     this.arena = new Arena(this.renderer.getScene(), this.config.arenaSize);
@@ -79,6 +83,8 @@ export class SnakeGame {
 
   // Snake events
     this.snake.on('collision', () => {
+      // Create collision particle effect
+      this.particles.createCollisionEffect(this.snake.getHeadPosition());
       this.gameOver();
     });
 
@@ -270,6 +276,7 @@ export class SnakeGame {
     this.snake?.destroy();
     this.food?.destroy();
     this.arena?.destroy();
+    this.particles?.destroy();
     this.renderer?.destroy();
     this.inputManager?.destroy();
   }
