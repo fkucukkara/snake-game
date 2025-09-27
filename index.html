@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Snake Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      overflow: hidden;
+      color: white;
+    }
+
+    #gameContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #gameCanvas {
+      border: 2px solid #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #ui {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+    }
+
+    #score {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 200;
+      display: none;
+    }
+
+    #gameOver h2 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      color: #ff4757;
+    }
+
+    #gameOver button {
+      background: #2ed573;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    #gameOver button:hover {
+      background: #26d465;
+    }
+
+    #startScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 200;
+    }
+
+    #startScreen h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    #startScreen button {
+      background: #2ed573;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #startScreen button:hover {
+      background: #26d465;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+      <div id="score">Score: 0</div>
+      <div id="highScore">High Score: 0</div>
+    </div>
+
+    <div id="controls">
+      <div>Use WASD or Arrow Keys to move</div>
+      <div>Press SPACE to pause</div>
+    </div>
+
+    <div id="startScreen">
+      <h1>🐍 3D Snake Game</h1>
+      <button id="startButton">Start Game</button>
+    </div>
+
+    <div id="gameOver">
+      <h2>Game Over!</h2>
+      <div id="finalScore">Final Score: 0</div>
+      <button id="restartButton">Play Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
