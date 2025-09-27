@@ -40,7 +40,7 @@ export class Renderer {
     // Renderer setup
     this.renderer.setSize(800, 600);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(new Color(0x0a0a1a), 1);
+    this.renderer.setClearColor(new Color(0x87CEEB), 1); // Sky blue background
     
     // Enhanced shadow settings
     this.renderer.shadowMap.enabled = true;
@@ -61,8 +61,8 @@ export class Renderer {
     this.camera.position.set(0, 20, 20);
     this.camera.lookAt(0, 0, 0);
 
-    // Add atmospheric fog
-    this.scene.fog = new Fog(0x0a0a1a, 20, 100);
+    // Add atmospheric fog with natural sky color
+    this.scene.fog = new Fog(0x87CEEB, 30, 120);
 
     // Setup enhanced lighting
     this.setupLighting();
@@ -72,17 +72,17 @@ export class Renderer {
   }
 
   /**
-   * Setup scene lighting
+   * Setup natural outdoor lighting
    */
   private setupLighting(): void {
     // Hemisphere light for natural sky/ground lighting
-    const hemisphereLight = new HemisphereLight(0x4488bb, 0x002244, 0.3);
+    const hemisphereLight = new HemisphereLight(0x87CEEB, 0x2d5a2d, 0.4);
     this.scene.add(hemisphereLight);
     this.lights.push(hemisphereLight);
 
     // Main directional light (sun)
-    const mainLight = new DirectionalLight(0xffffff, 1.5);
-    mainLight.position.set(10, 20, 5);
+    const mainLight = new DirectionalLight(0xFFFFDD, 2.0);
+    mainLight.position.set(15, 25, 10);
     mainLight.castShadow = true;
     
     // Enhanced shadow settings
@@ -100,14 +100,14 @@ export class Renderer {
     this.scene.add(mainLight);
     this.lights.push(mainLight);
 
-    // Fill light for softer shadows
-    const fillLight = new DirectionalLight(0x4488ff, 0.3);
-    fillLight.position.set(-5, 10, -5);
+    // Fill light for softer shadows (warm afternoon light)
+    const fillLight = new DirectionalLight(0xFFE4B5, 0.4);
+    fillLight.position.set(-8, 15, -8);
     this.scene.add(fillLight);
     this.lights.push(fillLight);
 
-    // Ambient light for overall scene illumination
-    const ambientLight = new AmbientLight(0x404040, 0.2);
+    // Ambient light for overall natural illumination
+    const ambientLight = new AmbientLight(0xFFFFE0, 0.3);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
   }

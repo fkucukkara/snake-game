@@ -216,11 +216,17 @@ export class SnakeGame {
 
     // Check food collision
     if (this.snake.checkFoodCollision(this.food.getPosition())) {
+      // Create beautiful food collection particle effect
+      this.particles.createFoodCollectionEffect(this.food.getPosition());
+      
       this.snake.grow();
       this.score += this.food.collect();
       this.updateScore();
       this.food.reset(this.snake.getSegmentPositions());
     }
+
+    // Update particle system
+    this.particles.update(deltaTime * 0.001);
 
     // Update camera to follow snake head
     this.renderer.updateCamera(this.snake.getHeadPosition());
