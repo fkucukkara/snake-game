@@ -257,7 +257,7 @@ export class Food extends EventManager {
    * Spawn food at a random position
    */
   spawn(occupiedPositions: Vector3[] = []): void {
-    const boundary = 8; // Keep food within arena bounds
+    const boundary = 18; // Keep food within arena bounds (slightly inside walls)
     let attempts = 0;
     let validPosition = false;
     

@@ -38,8 +38,8 @@ export class Renderer {
    * Initialize renderer settings with modern features
    */
   private initialize(): void {
-    // Renderer setup with advanced features
-    this.renderer.setSize(800, 600);
+    // Renderer setup with advanced features - full screen
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(new Color(0x87CEEB), 1); // Sky blue background
     
@@ -58,16 +58,16 @@ export class Renderer {
     // Enable high-quality output encoding
     this.renderer.outputColorSpace = SRGBColorSpace;
 
-    // Camera setup
+    // Camera setup - adjusted for larger arena
     this.camera.fov = 75;
-    this.camera.aspect = 800 / 600;
+    this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.near = 0.1;
     this.camera.far = 1000;
-    this.camera.position.set(0, 20, 20);
+    this.camera.position.set(0, 35, 35); // Higher and further back for better view
     this.camera.lookAt(0, 0, 0);
 
-    // Add atmospheric fog with natural sky color
-    this.scene.fog = new Fog(0x87CEEB, 30, 120);
+    // Add atmospheric fog with natural sky color - extended range
+    this.scene.fog = new Fog(0x87CEEB, 50, 150);
 
     // Setup enhanced lighting
     this.setupLighting();
@@ -127,14 +127,11 @@ export class Renderer {
   }
 
   /**
-   * Handle window resize
+   * Handle window resize for full-screen
    */
   private onWindowResize(): void {
-    const container = this.canvas.parentElement;
-    if (!container) return;
-
-    const width = Math.min(800, container.clientWidth - 40);
-    const height = Math.min(600, container.clientHeight - 40);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -152,7 +149,7 @@ export class Renderer {
    * Update camera position (for following snake)
    */
   updateCamera(targetPosition: Vector3): void {
-    const offset = new Vector3(0, 20, 20);
+    const offset = new Vector3(0, 35, 35); // Increased for larger arena
     const newPosition = targetPosition.clone().add(offset);
     
     // Smooth camera following with easing

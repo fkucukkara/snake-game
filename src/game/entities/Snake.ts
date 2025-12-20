@@ -452,7 +452,7 @@ export class Snake extends EventManager {
    */
   checkWallCollision(): boolean {
     const head = this.segments[0];
-    const boundary = 10; // Arena boundary
+    const boundary = 20; // Arena boundary (half of 40)
     
     return (
       Math.abs(head.position.x) > boundary ||

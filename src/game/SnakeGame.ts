@@ -21,7 +21,7 @@ export class SnakeGame {
   private animationFrameId: number = 0;
 
   private config: GameConfig = {
-    arenaSize: 20,
+    arenaSize: 40,
     snakeSpeed: 5,
     segmentSize: 2,
     foodSize: 1.5,
