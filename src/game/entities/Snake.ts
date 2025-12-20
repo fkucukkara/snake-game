@@ -160,9 +160,11 @@ export class Snake extends EventManager {
    * Initialize snake with starting segments
    */
   private initialize(length: number): void {
-    // Create head light
-    this.headLight = new PointLight(0x4a7c59, 2, 12, 2);
+    // Create head light with enhanced properties
+    this.headLight = new PointLight(0x4a7c59, 3, 15, 2); // Increased intensity and range
     this.headLight.castShadow = true;
+    this.headLight.shadow.mapSize.width = 1024;
+    this.headLight.shadow.mapSize.height = 1024;
     this.scene.add(this.headLight);
     
     for (let i = 0; i < length; i++) {
@@ -195,10 +197,11 @@ export class Snake extends EventManager {
       material = new MeshStandardMaterial({
         map: headTexture,
         normalMap: headTexture, // Use same texture as normal map for more detail
-        roughness: 0.3,
-        metalness: 0.1,
-        emissive: new Color(0x0a1a0a),
-        emissiveIntensity: 0.1
+        normalScale: new Vector2(0.3, 0.3), // Subtle normal mapping
+        roughness: 0.4, // Slightly rougher for realistic skin
+        metalness: 0.05, // Very slight metalness
+        emissive: new Color(0x0a2a0a), // Brighter emissive
+        emissiveIntensity: 0.15 // Slight glow
       });
       
     } else {
@@ -217,10 +220,13 @@ export class Snake extends EventManager {
       
       material = new MeshStandardMaterial({
         map: bodyTexture,
-        roughness: 0.4,
-        metalness: 0.05,
+        normalMap: bodyTexture, // Add normal mapping for body too
+        normalScale: new Vector2(0.25, 0.25),
+        roughness: 0.45, // Slightly rougher than head
+        metalness: 0.03, // Less metallic
         emissive: new Color(0x0a1a0a),
-        emissiveIntensity: 0.05
+        emissiveIntensity: 0.08, // Subtle glow
+        envMapIntensity: 0.5 // Add environment reflections
       });
       
       // Adjust material based on position
@@ -446,7 +452,7 @@ export class Snake extends EventManager {
    */
   checkWallCollision(): boolean {
     const head = this.segments[0];
-    const boundary = 10; // Arena boundary
+    const boundary = 20; // Arena boundary (half of 40)
     
     return (
       Math.abs(head.position.x) > boundary ||

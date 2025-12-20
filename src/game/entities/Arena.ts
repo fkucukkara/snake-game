@@ -6,7 +6,8 @@ import {
   Color,
   BoxGeometry,
   RepeatWrapping,
-  CanvasTexture
+  CanvasTexture,
+  Vector2
 } from 'three';
 
 /**
@@ -109,8 +110,13 @@ export class Arena {
     const material = new MeshStandardMaterial({
       color: new Color(0x2d5a2d),
       map: floorTexture,
-      roughness: 0.9,
-      metalness: 0.0
+      normalMap: floorTexture, // Add normal mapping for depth
+      normalScale: new Vector2(0.5, 0.5),
+      roughness: 0.95, // Very rough natural ground
+      metalness: 0.0,
+      emissive: new Color(0x0a1a0a), // Subtle dark green glow
+      emissiveIntensity: 0.05,
+      envMapIntensity: 0.3 // Subtle environment reflections
     });
     
     this.floor = new Mesh(geometry, material);
@@ -182,10 +188,13 @@ export class Arena {
     const wallMaterial = new MeshStandardMaterial({
       color: new Color(0x5d4037),
       map: wallTexture,
-      roughness: 0.9,
+      normalMap: wallTexture, // Add normal mapping for realistic stone
+      normalScale: new Vector2(0.6, 0.6),
+      roughness: 0.95, // Very rough stone surface
       metalness: 0.0,
       emissive: new Color(0x1a0e0a),
-      emissiveIntensity: 0.05
+      emissiveIntensity: 0.08, // Slightly brighter
+      envMapIntensity: 0.2 // Subtle reflections
     });
     
     // Create 4 walls with natural stone appearance

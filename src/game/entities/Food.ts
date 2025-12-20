@@ -2,6 +2,7 @@ import {
   MeshStandardMaterial,
   Mesh,
   Vector3,
+  Vector2,
   Scene,
   Color,
   MathUtils,
@@ -37,9 +38,11 @@ export class Food extends EventManager {
     
     this.createRealisticApple(config);
     
-    // Create glowing light for the apple
-    this.glowLight = new PointLight(0xff6644, 1.5, 12, 2);
+    // Create enhanced glowing light for the apple
+    this.glowLight = new PointLight(0xff6644, 2.5, 15, 2); // Increased intensity and range
     this.glowLight.castShadow = false; // Disable shadows for performance
+    this.glowLight.shadow.mapSize.width = 512;
+    this.glowLight.shadow.mapSize.height = 512;
     
     this.scene.add(this.foodGroup);
     this.scene.add(this.glowLight);
@@ -193,10 +196,13 @@ export class Food extends EventManager {
     const appleTexture = this.createAppleTexture();
     const appleMaterial = new MeshStandardMaterial({
       map: appleTexture,
-      roughness: 0.3,
-      metalness: 0.1,
-      emissive: new Color(0x331111),
-      emissiveIntensity: 0.1
+      normalMap: appleTexture, // Add normal mapping for better depth
+      normalScale: new Vector2(0.4, 0.4),
+      roughness: 0.25, // Shinier apple surface
+      metalness: 0.15, // Slight metalness for realistic reflection
+      emissive: new Color(0x441111), // Brighter emissive for "juicy" look
+      emissiveIntensity: 0.2, // Stronger glow
+      envMapIntensity: 0.7 // Enhanced environment reflections
     });
     
     this.mesh = new Mesh(appleGeometry, appleMaterial);
@@ -208,7 +214,9 @@ export class Food extends EventManager {
     const stemTexture = this.createStemTexture();
     const stemMaterial = new MeshStandardMaterial({
       map: stemTexture,
-      roughness: 0.8,
+      normalMap: stemTexture,
+      normalScale: new Vector2(0.5, 0.5),
+      roughness: 0.85, // Very rough wood surface
       metalness: 0.0
     });
     
@@ -223,10 +231,14 @@ export class Food extends EventManager {
     const leafTexture = this.createLeafTexture();
     const leafMaterial = new MeshStandardMaterial({
       map: leafTexture,
-      roughness: 0.6,
+      normalMap: leafTexture,
+      normalScale: new Vector2(0.3, 0.3),
+      roughness: 0.5, // Slightly smoother leaf
       metalness: 0.0,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.9,
+      emissive: new Color(0x112211), // Slight green glow
+      emissiveIntensity: 0.1
     });
     
     this.leafMesh = new Mesh(leafGeometry, leafMaterial);
@@ -245,7 +257,7 @@ export class Food extends EventManager {
    * Spawn food at a random position
    */
   spawn(occupiedPositions: Vector3[] = []): void {
-    const boundary = 8; // Keep food within arena bounds
+    const boundary = 18; // Keep food within arena bounds (slightly inside walls)
     let attempts = 0;
     let validPosition = false;
     
