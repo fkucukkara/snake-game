@@ -9,7 +9,8 @@ import {
   PCFSoftShadowMap,
   Fog,
   HemisphereLight,
-  PointLight
+  PointLight,
+  SRGBColorSpace
 } from 'three';
 
 /**
@@ -55,7 +56,7 @@ export class Renderer {
     this.renderer.useLegacyLights = false;
     
     // Enable high-quality output encoding
-    this.renderer.outputColorSpace = 'srgb';
+    this.renderer.outputColorSpace = SRGBColorSpace;
 
     // Camera setup
     this.camera.fov = 75;

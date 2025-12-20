@@ -2,6 +2,7 @@ import {
   MeshStandardMaterial,
   Mesh,
   Vector3,
+  Vector2,
   Scene,
   Color,
   MathUtils,
@@ -201,9 +202,7 @@ export class Food extends EventManager {
       metalness: 0.15, // Slight metalness for realistic reflection
       emissive: new Color(0x441111), // Brighter emissive for "juicy" look
       emissiveIntensity: 0.2, // Stronger glow
-      envMapIntensity: 0.7, // Enhanced environment reflections
-      clearcoat: 0.3, // Add clearcoat for glossy surface
-      clearcoatRoughness: 0.2 // Smooth clearcoat
+      envMapIntensity: 0.7 // Enhanced environment reflections
     });
     
     this.mesh = new Mesh(appleGeometry, appleMaterial);
