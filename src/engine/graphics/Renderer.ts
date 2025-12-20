@@ -41,7 +41,7 @@ export class Renderer {
     // Renderer setup with advanced features - full screen
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(new Color(0x87CEEB), 1); // Sky blue background
+    this.renderer.setClearColor(new Color(0x2a2a2a), 1); // Dark charcoal background
     
     // Enhanced shadow settings for realistic shadows
     this.renderer.shadowMap.enabled = true;
@@ -66,8 +66,8 @@ export class Renderer {
     this.camera.position.set(0, 35, 35); // Higher and further back for better view
     this.camera.lookAt(0, 0, 0);
 
-    // Add atmospheric fog with natural sky color - extended range
-    this.scene.fog = new Fog(0x87CEEB, 50, 150);
+    // Add atmospheric fog matching dark background - extended range
+    this.scene.fog = new Fog(0x2a2a2a, 50, 150);
 
     // Setup enhanced lighting
     this.setupLighting();
@@ -80,8 +80,8 @@ export class Renderer {
    * Setup modern outdoor lighting with realistic effects
    */
   private setupLighting(): void {
-    // Hemisphere light for natural sky/ground lighting (increased intensity)
-    const hemisphereLight = new HemisphereLight(0x87CEEB, 0x2d5a2d, 0.6);
+    // Hemisphere light for dark background with ground lighting (increased intensity)
+    const hemisphereLight = new HemisphereLight(0x505050, 0x2d5a2d, 0.6);
     hemisphereLight.position.set(0, 50, 0);
     this.scene.add(hemisphereLight);
     this.lights.push(hemisphereLight);

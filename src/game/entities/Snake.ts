@@ -52,9 +52,9 @@ export class Snake extends EventManager {
     if (isHead) {
       // Head texture with eyes and details
       const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
-      gradient.addColorStop(0, '#4a7c59');
-      gradient.addColorStop(0.6, '#2d5016');
-      gradient.addColorStop(1, '#1a3009');
+      gradient.addColorStop(0, '#66ff66');
+      gradient.addColorStop(0.6, '#44cc44');
+      gradient.addColorStop(1, '#228822');
       
       context.fillStyle = gradient;
       context.fillRect(0, 0, 256, 256);
@@ -66,14 +66,14 @@ export class Snake extends EventManager {
           const scaleX = x + offset;
           
           // Scale outline
-          context.strokeStyle = '#1a3009';
+          context.strokeStyle = '#228822';
           context.lineWidth = 1;
           context.beginPath();
           context.arc(scaleX, y, 6, 0, Math.PI * 2);
           context.stroke();
           
           // Scale highlight
-          context.fillStyle = '#5a8c69';
+          context.fillStyle = '#88ff88';
           context.beginPath();
           context.arc(scaleX - 2, y - 2, 2, 0, Math.PI * 2);
           context.fill();
@@ -101,9 +101,9 @@ export class Snake extends EventManager {
     } else {
       // Body texture with realistic snake pattern
       const gradient = context.createLinearGradient(0, 0, 0, 256);
-      gradient.addColorStop(0, '#3d6b42');
-      gradient.addColorStop(0.5, '#2d5016');
-      gradient.addColorStop(1, '#1a3009');
+      gradient.addColorStop(0, '#55dd55');
+      gradient.addColorStop(0.5, '#44cc44');
+      gradient.addColorStop(1, '#338833');
       
       context.fillStyle = gradient;
       context.fillRect(0, 0, 256, 256);
@@ -115,7 +115,7 @@ export class Snake extends EventManager {
           const patternX = x + offset;
           
           // Diamond shape
-          context.strokeStyle = '#1a3009';
+          context.strokeStyle = '#338833';
           context.lineWidth = 2;
           context.beginPath();
           context.moveTo(patternX, y - 8);
@@ -126,7 +126,7 @@ export class Snake extends EventManager {
           context.stroke();
           
           // Inner highlight
-          context.fillStyle = '#4a7c59';
+          context.fillStyle = '#77ff77';
           context.beginPath();
           context.moveTo(patternX, y - 4);
           context.lineTo(patternX + 3, y);
@@ -143,7 +143,7 @@ export class Snake extends EventManager {
         const y = Math.random() * 256;
         const size = Math.random() * 4 + 2;
         
-        context.fillStyle = `rgba(26, 48, 9, ${Math.random() * 0.5})`;
+        context.fillStyle = `rgba(51, 136, 51, ${Math.random() * 0.5})`;
         context.beginPath();
         context.arc(x, y, size, 0, Math.PI * 2);
         context.fill();
@@ -161,7 +161,7 @@ export class Snake extends EventManager {
    */
   private initialize(length: number): void {
     // Create head light with enhanced properties
-    this.headLight = new PointLight(0x4a7c59, 3, 15, 2); // Increased intensity and range
+    this.headLight = new PointLight(0x66ff66, 3, 15, 2); // Increased intensity and range
     this.headLight.castShadow = true;
     this.headLight.shadow.mapSize.width = 1024;
     this.headLight.shadow.mapSize.height = 1024;
