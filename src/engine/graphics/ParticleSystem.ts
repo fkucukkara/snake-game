@@ -52,14 +52,15 @@ export class ParticleSystem {
     geometry.setAttribute('color', new BufferAttribute(this.colors, 3));
     geometry.setAttribute('size', new BufferAttribute(this.sizes, 1));
 
-    // Create particle material with glow effect
+    // Create enhanced particle material with better glow effect
     const material = new PointsMaterial({
-      size: 0.5,
+      size: 0.8, // Larger particles for better visibility
       sizeAttenuation: true,
-      alphaTest: 0.01,
+      alphaTest: 0.005, // Lower threshold for softer edges
       transparent: true,
       blending: AdditiveBlending,
       vertexColors: true,
+      depthWrite: false, // Disable depth writing for better blending
       map: this.createParticleTexture()
     });
 
@@ -69,18 +70,20 @@ export class ParticleSystem {
 
   private createParticleTexture(): Texture {
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = 128; // Higher resolution
+    canvas.height = 128;
     
     const context = canvas.getContext('2d')!;
-    const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+    const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
     gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.4)');
+    gradient.addColorStop(0.15, 'rgba(255, 255, 255, 0.9)');
+    gradient.addColorStop(0.35, 'rgba(255, 255, 255, 0.6)');
+    gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.3)');
+    gradient.addColorStop(0.85, 'rgba(255, 255, 255, 0.1)');
     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
     
     context.fillStyle = gradient;
-    context.fillRect(0, 0, 64, 64);
+    context.fillRect(0, 0, 128, 128);
     
     const texture = new TextureLoader().load(canvas.toDataURL());
     return texture;
@@ -101,18 +104,18 @@ export class ParticleSystem {
         this.positions[i3 + 1] = position.y + (Math.random() - 0.5) * spread;
         this.positions[i3 + 2] = position.z + (Math.random() - 0.5) * spread;
         
-        // Velocity
-        this.velocities[i3] = (Math.random() - 0.5) * 10;
-        this.velocities[i3 + 1] = Math.random() * 8 + 2;
-        this.velocities[i3 + 2] = (Math.random() - 0.5) * 10;
+        // Velocity - more dynamic spread
+        this.velocities[i3] = (Math.random() - 0.5) * 12; // Increased spread
+        this.velocities[i3 + 1] = Math.random() * 10 + 3; // Higher initial velocity
+        this.velocities[i3 + 2] = (Math.random() - 0.5) * 12;
         
         // Color
         this.colors[i3] = color.r;
         this.colors[i3 + 1] = color.g;
         this.colors[i3 + 2] = color.b;
         
-        // Size and lifetime
-        this.sizes[i] = Math.random() * 0.5 + 0.2;
+        // Size and lifetime - larger initial size
+        this.sizes[i] = Math.random() * 0.8 + 0.4; // Larger particles
         this.lifetimes[i] = this.maxLifetime;
         
         emitted++;
@@ -139,12 +142,15 @@ export class ParticleSystem {
           this.positions[i3 + 1] += this.velocities[i3 + 1] * deltaTime;
           this.positions[i3 + 2] += this.velocities[i3 + 2] * deltaTime;
           
-          // Apply gravity
-          this.velocities[i3 + 1] -= 9.8 * deltaTime;
+          // Apply gravity with air resistance
+          this.velocities[i3 + 1] -= 12.0 * deltaTime; // Slightly stronger gravity
+          this.velocities[i3] *= 0.98; // Air resistance
+          this.velocities[i3 + 2] *= 0.98;
           
-          // Fade out over time
+          // Fade out over time with better curve
           const lifeRatio = this.lifetimes[i] / this.maxLifetime;
-          this.sizes[i] = (0.5 + Math.random() * 0.3) * lifeRatio;
+          const sizeCurve = Math.pow(lifeRatio, 0.7); // Non-linear fade for smoother effect
+          this.sizes[i] = (0.8 + Math.random() * 0.4) * sizeCurve; // Larger size range
           
           needsUpdate = true;
         } else {

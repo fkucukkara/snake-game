@@ -59,12 +59,12 @@ export class PostProcessor {
   }
 
   private setupMaterials(): void {
-    // Simple bloom extraction shader
+    // Enhanced bloom extraction shader
     this.bloomMaterial = new ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
-        threshold: { value: 0.7 },
-        intensity: { value: 1.2 }
+        threshold: { value: 0.6 }, // Lower threshold for more bloom
+        intensity: { value: 1.5 } // Higher intensity
       },
       vertexShader: `
         varying vec2 vUv;
@@ -92,12 +92,12 @@ export class PostProcessor {
       `
     });
 
-    // Compose shader to combine original and bloom
+    // Enhanced compose shader with vignette and color grading
     this.composeMaterial = new ShaderMaterial({
       uniforms: {
         tDiffuse: { value: null },
         tBloom: { value: null },
-        bloomStrength: { value: 0.3 }
+        bloomStrength: { value: 0.5 } // Increased bloom strength
       },
       vertexShader: `
         varying vec2 vUv;
@@ -112,11 +112,46 @@ export class PostProcessor {
         uniform float bloomStrength;
         varying vec2 vUv;
         
+        // Vignette function
+        float vignette(vec2 uv, float intensity, float extent) {
+          uv = uv * 2.0 - 1.0;
+          float vignette = 1.0 - dot(uv, uv) * intensity;
+          return pow(vignette, extent);
+        }
+        
+        // Color grading - warm tone
+        vec3 colorGrade(vec3 color) {
+          // Slight warm color shift
+          color.r *= 1.05;
+          color.g *= 1.02;
+          color.b *= 0.98;
+          
+          // Increase saturation slightly
+          float gray = dot(color, vec3(0.299, 0.587, 0.114));
+          color = mix(vec3(gray), color, 1.15);
+          
+          return color;
+        }
+        
         void main() {
           vec4 original = texture2D(tDiffuse, vUv);
           vec4 bloom = texture2D(tBloom, vUv);
           
-          gl_FragColor = original + bloom * bloomStrength;
+          // Combine with bloom
+          vec3 color = original.rgb + bloom.rgb * bloomStrength;
+          
+          // Apply color grading
+          color = colorGrade(color);
+          
+          // Apply vignette
+          float vig = vignette(vUv, 0.3, 1.5);
+          color *= vig;
+          
+          // Add subtle film grain
+          float grain = (fract(sin(dot(vUv, vec2(12.9898, 78.233)) * 43758.5453)) - 0.5) * 0.015;
+          color += grain;
+          
+          gl_FragColor = vec4(color, original.a);
         }
       `
     });
