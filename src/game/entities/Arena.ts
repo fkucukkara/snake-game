@@ -26,7 +26,7 @@ export class Arena {
   }
 
   /**
-   * Create a procedural nature-themed floor texture
+   * Create a modern grid floor texture with neon accents
    */
   private createFloorTexture(): CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -35,52 +35,62 @@ export class Arena {
     
     const context = canvas.getContext('2d')!;
     
-    // Create a grass-like base
-    const gradient = context.createLinearGradient(0, 0, 0, 512);
-    gradient.addColorStop(0, '#2d5a2d');
-    gradient.addColorStop(0.5, '#1a3d1a');
-    gradient.addColorStop(1, '#0f2e0f');
+    // Modern dark blue-purple base
+    const gradient = context.createLinearGradient(0, 0, 512, 512);
+    gradient.addColorStop(0, '#0a0e1a');
+    gradient.addColorStop(0.5, '#1a1f2e');
+    gradient.addColorStop(1, '#0a0e1a');
     
     context.fillStyle = gradient;
     context.fillRect(0, 0, 512, 512);
     
-    // Add grass texture with small strokes
-    for (let i = 0; i < 800; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const length = Math.random() * 8 + 4;
-      const angle = Math.random() * Math.PI * 2;
-      
-      context.strokeStyle = `rgba(${50 + Math.random() * 40}, ${80 + Math.random() * 40}, ${30 + Math.random() * 30}, ${0.3 + Math.random() * 0.4})`;
-      context.lineWidth = 1 + Math.random() * 2;
+    // Draw grid pattern with neon cyan lines
+    const gridSize = 32;
+    context.strokeStyle = 'rgba(0, 255, 255, 0.3)'; // Cyan grid lines
+    context.lineWidth = 1;
+    
+    // Vertical lines
+    for (let x = 0; x <= 512; x += gridSize) {
       context.beginPath();
-      context.moveTo(x, y);
-      context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+      context.moveTo(x, 0);
+      context.lineTo(x, 512);
       context.stroke();
     }
     
-    // Add some dirt patches
-    for (let i = 0; i < 15; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const size = Math.random() * 30 + 15;
-      
-      context.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.3 + 0.1})`;
+    // Horizontal lines
+    for (let y = 0; y <= 512; y += gridSize) {
       context.beginPath();
-      context.arc(x, y, size, 0, Math.PI * 2);
-      context.fill();
+      context.moveTo(0, y);
+      context.lineTo(512, y);
+      context.stroke();
     }
     
-    // Add small rocks/pebbles
-    for (let i = 0; i < 25; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const size = Math.random() * 4 + 2;
-      
-      context.fillStyle = `rgba(105, 105, 105, ${Math.random() * 0.4 + 0.2})`;
+    // Highlight major grid lines (every 4th line)
+    context.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+    context.lineWidth = 2;
+    
+    for (let x = 0; x <= 512; x += gridSize * 4) {
       context.beginPath();
-      context.arc(x, y, size, 0, Math.PI * 2);
-      context.fill();
+      context.moveTo(x, 0);
+      context.lineTo(x, 512);
+      context.stroke();
+    }
+    
+    for (let y = 0; y <= 512; y += gridSize * 4) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(512, y);
+      context.stroke();
+    }
+    
+    // Add subtle glow dots at intersections
+    for (let x = 0; x <= 512; x += gridSize * 4) {
+      for (let y = 0; y <= 512; y += gridSize * 4) {
+        context.fillStyle = 'rgba(0, 255, 255, 0.2)';
+        context.beginPath();
+        context.arc(x, y, 2, 0, Math.PI * 2);
+        context.fill();
+      }
     }
     
     return new CanvasTexture(canvas);
@@ -108,15 +118,13 @@ export class Arena {
     floorTexture.repeat.set(3, 3);
     
     const material = new MeshStandardMaterial({
-      color: new Color(0x2d5a2d),
+      color: new Color(0x1a1f2e),
       map: floorTexture,
-      normalMap: floorTexture, // Add normal mapping for depth
-      normalScale: new Vector2(0.5, 0.5),
-      roughness: 0.95, // Very rough natural ground
-      metalness: 0.0,
-      emissive: new Color(0x0a1a0a), // Subtle dark green glow
-      emissiveIntensity: 0.05,
-      envMapIntensity: 0.3 // Subtle environment reflections
+      roughness: 0.3, // Smooth, reflective surface
+      metalness: 0.7, // Metallic appearance
+      emissive: new Color(0x001122), // Subtle cyan glow
+      emissiveIntensity: 0.15,
+      envMapIntensity: 0.8 // Strong environment reflections for modern look
     });
     
     this.floor = new Mesh(geometry, material);
@@ -128,13 +136,13 @@ export class Arena {
   }
 
   /**
-   * Create natural-looking arena boundary walls
+   * Create sleek modern arena boundary walls with neon accents
    */
   private createWalls(size: number): void {
     const wallHeight = 4;
     const wallThickness = 0.8;
     
-    // Create stone/rock wall texture
+    // Create modern metallic wall texture with neon lines
     const createWallTexture = (): CanvasTexture => {
       const canvas = document.createElement('canvas');
       canvas.width = 256;
@@ -142,39 +150,36 @@ export class Arena {
       
       const context = canvas.getContext('2d')!;
       
-      // Stone base color
+      // Dark metallic base
       const gradient = context.createLinearGradient(0, 0, 0, 256);
-      gradient.addColorStop(0, '#5d4037');
-      gradient.addColorStop(0.5, '#4e342e');
-      gradient.addColorStop(1, '#3e2723');
+      gradient.addColorStop(0, '#1a1f2e');
+      gradient.addColorStop(0.5, '#0f1419');
+      gradient.addColorStop(1, '#0a0e1a');
       
       context.fillStyle = gradient;
       context.fillRect(0, 0, 256, 256);
       
-      // Add stone texture with irregular shapes
-      for (let i = 0; i < 30; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const width = Math.random() * 40 + 20;
-        const height = Math.random() * 30 + 15;
-        
-        context.fillStyle = `rgba(${95 + Math.random() * 30}, ${64 + Math.random() * 20}, ${55 + Math.random() * 15}, ${0.3 + Math.random() * 0.4})`;
-        context.fillRect(x, y, width, height);
+      // Add horizontal neon accent lines
+      for (let y = 0; y < 256; y += 64) {
+        context.fillStyle = 'rgba(0, 255, 255, 0.4)';
+        context.fillRect(0, y, 256, 2);
       }
       
-      // Add cracks and details
-      for (let i = 0; i < 20; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const length = Math.random() * 50 + 10;
-        const angle = Math.random() * Math.PI * 2;
-        
-        context.strokeStyle = `rgba(30, 20, 15, ${0.5 + Math.random() * 0.3})`;
-        context.lineWidth = 1 + Math.random() * 2;
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
-        context.stroke();
+      // Add vertical accent lines at edges
+      context.fillStyle = 'rgba(255, 102, 204, 0.3)';
+      context.fillRect(0, 0, 4, 256);
+      context.fillRect(252, 0, 4, 256);
+      
+      // Add subtle hexagonal pattern for tech aesthetic
+      const hexSize = 32;
+      context.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+      context.lineWidth = 1;
+      for (let x = 0; x < 256; x += hexSize) {
+        for (let y = 0; y < 256; y += hexSize * 1.5) {
+          context.beginPath();
+          context.arc(x + (y % (hexSize * 1.5) === 0 ? 0 : hexSize / 2), y, hexSize / 3, 0, Math.PI * 2);
+          context.stroke();
+        }
       }
       
       const texture = new CanvasTexture(canvas);
@@ -186,15 +191,13 @@ export class Arena {
     const wallTexture = createWallTexture();
     const wallGeometry = new BoxGeometry(wallThickness, wallHeight, size + wallThickness * 2);
     const wallMaterial = new MeshStandardMaterial({
-      color: new Color(0x5d4037),
+      color: new Color(0x1a1f2e),
       map: wallTexture,
-      normalMap: wallTexture, // Add normal mapping for realistic stone
-      normalScale: new Vector2(0.6, 0.6),
-      roughness: 0.95, // Very rough stone surface
-      metalness: 0.0,
-      emissive: new Color(0x1a0e0a),
-      emissiveIntensity: 0.08, // Slightly brighter
-      envMapIntensity: 0.2 // Subtle reflections
+      roughness: 0.2, // Smooth, reflective surface
+      metalness: 0.8, // Highly metallic
+      emissive: new Color(0x001122),
+      emissiveIntensity: 0.2, // Brighter neon glow
+      envMapIntensity: 1.0 // Strong reflections for glass-like effect
     });
     
     // Create 4 walls with natural stone appearance

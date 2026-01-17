@@ -40,7 +40,7 @@ export class Snake extends EventManager {
   }
 
   /**
-   * Create realistic snake skin texture
+   * Create modern metallic snake texture with neon accents
    */
   private createSnakeTexture(isHead: boolean = false): CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -50,100 +50,94 @@ export class Snake extends EventManager {
     const context = canvas.getContext('2d')!;
     
     if (isHead) {
-      // Head texture with eyes and details
+      // Head texture with modern cyan-magenta gradient
       const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
-      gradient.addColorStop(0, '#66ff66');
-      gradient.addColorStop(0.6, '#44cc44');
-      gradient.addColorStop(1, '#228822');
+      gradient.addColorStop(0, '#00ffff');
+      gradient.addColorStop(0.4, '#0088ff');
+      gradient.addColorStop(0.7, '#6600ff');
+      gradient.addColorStop(1, '#330044');
       
       context.fillStyle = gradient;
       context.fillRect(0, 0, 256, 256);
       
-      // Add scale patterns for head
-      for (let y = 0; y < 256; y += 16) {
-        for (let x = 0; x < 256; x += 16) {
-          const offset = (y / 16) % 2 === 0 ? 0 : 8;
-          const scaleX = x + offset;
+      // Add hexagonal tech pattern for head
+      for (let y = 0; y < 256; y += 24) {
+        for (let x = 0; x < 256; x += 24) {
+          const offset = (y / 24) % 2 === 0 ? 0 : 12;
+          const patternX = x + offset;
           
-          // Scale outline
-          context.strokeStyle = '#228822';
-          context.lineWidth = 1;
+          // Hexagonal outline
+          context.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+          context.lineWidth = 2;
           context.beginPath();
-          context.arc(scaleX, y, 6, 0, Math.PI * 2);
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const px = patternX + Math.cos(angle) * 8;
+            const py = y + Math.sin(angle) * 8;
+            if (i === 0) context.moveTo(px, py);
+            else context.lineTo(px, py);
+          }
+          context.closePath();
           context.stroke();
-          
-          // Scale highlight
-          context.fillStyle = '#88ff88';
-          context.beginPath();
-          context.arc(scaleX - 2, y - 2, 2, 0, Math.PI * 2);
-          context.fill();
         }
       }
       
-      // Add eyes
-      context.fillStyle = '#000000';
-      context.beginPath();
-      context.arc(96, 96, 8, 0, Math.PI * 2);
-      context.fill();
-      context.beginPath();
-      context.arc(160, 96, 8, 0, Math.PI * 2);
-      context.fill();
-      
-      // Eye highlights
+      // Add glowing eyes
       context.fillStyle = '#ffffff';
       context.beginPath();
-      context.arc(98, 94, 3, 0, Math.PI * 2);
+      context.arc(96, 96, 10, 0, Math.PI * 2);
       context.fill();
       context.beginPath();
-      context.arc(162, 94, 3, 0, Math.PI * 2);
+      context.arc(160, 96, 10, 0, Math.PI * 2);
+      context.fill();
+      
+      // Eye glow
+      context.fillStyle = 'rgba(0, 255, 255, 0.8)';
+      context.beginPath();
+      context.arc(96, 96, 6, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.arc(160, 96, 6, 0, Math.PI * 2);
       context.fill();
       
     } else {
-      // Body texture with realistic snake pattern
+      // Body texture with modern cyan gradient and tech patterns
       const gradient = context.createLinearGradient(0, 0, 0, 256);
-      gradient.addColorStop(0, '#55dd55');
-      gradient.addColorStop(0.5, '#44cc44');
-      gradient.addColorStop(1, '#338833');
+      gradient.addColorStop(0, '#00aaff');
+      gradient.addColorStop(0.5, '#0066ff');
+      gradient.addColorStop(1, '#3300aa');
       
       context.fillStyle = gradient;
       context.fillRect(0, 0, 256, 256);
       
-      // Add diamond pattern typical of snake skin
-      for (let y = 0; y < 256; y += 20) {
-        for (let x = 0; x < 256; x += 20) {
-          const offset = (y / 20) % 2 === 0 ? 0 : 10;
-          const patternX = x + offset;
-          
-          // Diamond shape
-          context.strokeStyle = '#338833';
-          context.lineWidth = 2;
+      // Add tech line pattern
+      for (let y = 0; y < 256; y += 32) {
+        context.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(256, y);
+        context.stroke();
+      }
+      
+      // Add circuit-like pattern
+      for (let y = 0; y < 256; y += 40) {
+        for (let x = 0; x < 256; x += 40) {
+          context.strokeStyle = 'rgba(255, 102, 204, 0.3)';
+          context.lineWidth = 1;
           context.beginPath();
-          context.moveTo(patternX, y - 8);
-          context.lineTo(patternX + 6, y);
-          context.lineTo(patternX, y + 8);
-          context.lineTo(patternX - 6, y);
-          context.closePath();
+          context.arc(x, y, 3, 0, Math.PI * 2);
           context.stroke();
-          
-          // Inner highlight
-          context.fillStyle = '#77ff77';
-          context.beginPath();
-          context.moveTo(patternX, y - 4);
-          context.lineTo(patternX + 3, y);
-          context.lineTo(patternX, y + 4);
-          context.lineTo(patternX - 3, y);
-          context.closePath();
-          context.fill();
         }
       }
       
-      // Add random spots and variations
-      for (let i = 0; i < 40; i++) {
+      // Add subtle highlights
+      for (let i = 0; i < 30; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
-        const size = Math.random() * 4 + 2;
+        const size = Math.random() * 3 + 1;
         
-        context.fillStyle = `rgba(51, 136, 51, ${Math.random() * 0.5})`;
+        context.fillStyle = `rgba(0, 255, 255, ${Math.random() * 0.4 + 0.2})`;
         context.beginPath();
         context.arc(x, y, size, 0, Math.PI * 2);
         context.fill();
@@ -160,8 +154,8 @@ export class Snake extends EventManager {
    * Initialize snake with starting segments
    */
   private initialize(length: number): void {
-    // Create head light with enhanced properties
-    this.headLight = new PointLight(0x66ff66, 3, 15, 2); // Increased intensity and range
+    // Create head light with modern cyan glow
+    this.headLight = new PointLight(0x00ffff, 4, 18, 2); // Bright cyan, increased intensity and range
     this.headLight.castShadow = true;
     this.headLight.shadow.mapSize.width = 1024;
     this.headLight.shadow.mapSize.height = 1024;
@@ -220,18 +214,16 @@ export class Snake extends EventManager {
       
       material = new MeshStandardMaterial({
         map: bodyTexture,
-        normalMap: bodyTexture, // Add normal mapping for body too
-        normalScale: new Vector2(0.25, 0.25),
-        roughness: 0.45, // Slightly rougher than head
-        metalness: 0.03, // Less metallic
-        emissive: new Color(0x0a1a0a),
-        emissiveIntensity: 0.08, // Subtle glow
-        envMapIntensity: 0.5 // Add environment reflections
+        roughness: 0.25, // Smooth, reflective surface
+        metalness: 0.85, // Highly metallic like chrome
+        emissive: new Color(0x0088ff), // Blue-cyan glow
+        emissiveIntensity: 0.25, // Moderate neon glow
+        envMapIntensity: 1.0 // Strong reflections
       });
       
-      // Adjust material based on position
-      const baseColor = new Color(0x3d6b42);
-      baseColor.multiplyScalar(colorIntensity);
+      // Adjust material color based on position for gradient effect
+      const baseColor = new Color(0x0066ff);
+      baseColor.lerp(new Color(0x3300aa), 1 - colorIntensity);
       material.color = baseColor;
     }
     

@@ -2,15 +2,13 @@ import {
   MeshStandardMaterial,
   Mesh,
   Vector3,
-  Vector2,
   Scene,
   Color,
   MathUtils,
   PointLight,
   SphereGeometry,
   CanvasTexture,
-  Group,
-  CylinderGeometry
+  Group
 } from 'three';
 import { EventManager } from '@/engine/core/EventManager';
 import { GameConfig } from '@/types';
@@ -21,8 +19,6 @@ import { GameConfig } from '@/types';
 export class Food extends EventManager {
   private foodGroup: Group;
   private mesh!: Mesh;
-  private stemMesh!: Mesh;
-  private leafMesh!: Mesh;
   private scene: Scene;
   private position: Vector3;
   private value: number = 10;
@@ -38,8 +34,8 @@ export class Food extends EventManager {
     
     this.createRealisticApple(config);
     
-    // Create enhanced glowing light for the apple
-    this.glowLight = new PointLight(0xff6644, 2.5, 15, 2); // Increased intensity and range
+    // Create enhanced glowing light for the energy orb
+    this.glowLight = new PointLight(0xff00ff, 4.0, 20, 2); // Bright magenta, increased intensity and range
     this.glowLight.castShadow = false; // Disable shadows for performance
     this.glowLight.shadow.mapSize.width = 512;
     this.glowLight.shadow.mapSize.height = 512;
@@ -51,7 +47,7 @@ export class Food extends EventManager {
   }
 
   /**
-   * Create realistic apple texture
+   * Create glowing energy orb texture
    */
   private createAppleTexture(): CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -60,132 +56,62 @@ export class Food extends EventManager {
     
     const context = canvas.getContext('2d')!;
     
-    // Create apple base color with gradient
-    const gradient = context.createRadialGradient(128, 100, 0, 128, 128, 128);
-    gradient.addColorStop(0, '#ff4444');
-    gradient.addColorStop(0.6, '#cc2222');
-    gradient.addColorStop(1, '#991111');
+    // Transparent background for glow effect
+    context.clearRect(0, 0, 256, 256);
+    
+    // Create energy orb with magenta-pink gradient
+    const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0, '#ff66ff');
+    gradient.addColorStop(0.3, '#ff00ff');
+    gradient.addColorStop(0.6, '#cc00cc');
+    gradient.addColorStop(0.9, '#990099');
+    gradient.addColorStop(1, 'rgba(153, 0, 153, 0)');
     
     context.fillStyle = gradient;
-    context.fillRect(0, 0, 256, 256);
-    
-    // Add apple highlights and variations
-    for (let i = 0; i < 20; i++) {
-      const x = Math.random() * 256;
-      const y = Math.random() * 256;
-      const size = Math.random() * 15 + 5;
-      const alpha = Math.random() * 0.3 + 0.1;
-      
-      context.fillStyle = `rgba(255, 100, 100, ${alpha})`;
-      context.beginPath();
-      context.arc(x, y, size, 0, Math.PI * 2);
-      context.fill();
-    }
-    
-    // Add some darker spots for realism
-    for (let i = 0; i < 15; i++) {
-      const x = Math.random() * 256;
-      const y = Math.random() * 256;
-      const size = Math.random() * 8 + 2;
-      
-      context.fillStyle = `rgba(150, 20, 20, ${Math.random() * 0.4})`;
-      context.beginPath();
-      context.arc(x, y, size, 0, Math.PI * 2);
-      context.fill();
-    }
-    
-    // Add subtle vertical lines for apple texture
-    for (let i = 0; i < 10; i++) {
-      const x = (i / 10) * 256 + Math.random() * 20 - 10;
-      context.strokeStyle = `rgba(200, 50, 50, 0.3)`;
-      context.lineWidth = 2;
-      context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x + Math.random() * 30 - 15, 256);
-      context.stroke();
-    }
-    
-    return new CanvasTexture(canvas);
-  }
-
-  /**
-   * Create stem texture
-   */
-  private createStemTexture(): CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    
-    const context = canvas.getContext('2d')!;
-    
-    // Brown stem color
-    const gradient = context.createLinearGradient(0, 0, 0, 64);
-    gradient.addColorStop(0, '#8b4513');
-    gradient.addColorStop(0.5, '#654321');
-    gradient.addColorStop(1, '#3d2914');
-    
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 64, 64);
-    
-    // Add wood grain lines
-    for (let y = 0; y < 64; y += 4) {
-      context.strokeStyle = `rgba(50, 25, 10, ${Math.random() * 0.5})`;
-      context.lineWidth = 1;
-      context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(64, y + Math.random() * 4 - 2);
-      context.stroke();
-    }
-    
-    return new CanvasTexture(canvas);
-  }
-
-  /**
-   * Create leaf texture
-   */
-  private createLeafTexture(): CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    
-    const context = canvas.getContext('2d')!;
-    
-    // Green leaf color
-    const gradient = context.createLinearGradient(0, 0, 64, 64);
-    gradient.addColorStop(0, '#228b22');
-    gradient.addColorStop(0.5, '#32cd32');
-    gradient.addColorStop(1, '#006400');
-    
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 64, 64);
-    
-    // Add leaf veins
-    context.strokeStyle = 'rgba(0, 100, 0, 0.6)';
-    context.lineWidth = 2;
     context.beginPath();
-    context.moveTo(32, 0);
-    context.lineTo(32, 64);
-    context.stroke();
+    context.arc(128, 128, 128, 0, Math.PI * 2);
+    context.fill();
     
-    // Side veins
-    for (let i = 1; i < 4; i++) {
-      const y = (i / 4) * 64;
+    // Add bright core
+    const coreGradient = context.createRadialGradient(128, 128, 0, 128, 128, 40);
+    coreGradient.addColorStop(0, '#ffffff');
+    coreGradient.addColorStop(0.5, '#ff99ff');
+    coreGradient.addColorStop(1, 'rgba(255, 102, 255, 0)');
+    
+    context.fillStyle = coreGradient;
+    context.beginPath();
+    context.arc(128, 128, 40, 0, Math.PI * 2);
+    context.fill();
+    
+    // Add energy waves/rings
+    for (let i = 1; i <= 3; i++) {
+      const radius = 60 + i * 20;
+      context.strokeStyle = `rgba(255, 0, 255, ${0.6 - i * 0.15})`;
+      context.lineWidth = 3;
       context.beginPath();
-      context.moveTo(32, y);
-      context.lineTo(10, y + 10);
+      context.arc(128, 128, radius, 0, Math.PI * 2);
       context.stroke();
+    }
+    
+    // Add sparkles
+    for (let i = 0; i < 30; i++) {
+      const angle = (i / 30) * Math.PI * 2;
+      const distance = 70 + Math.random() * 30;
+      const x = 128 + Math.cos(angle) * distance;
+      const y = 128 + Math.sin(angle) * distance;
+      const size = Math.random() * 4 + 2;
       
+      context.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.8 + 0.2})`;
       context.beginPath();
-      context.moveTo(32, y);
-      context.lineTo(54, y + 10);
-      context.stroke();
+      context.arc(x, y, size, 0, Math.PI * 2);
+      context.fill();
     }
     
     return new CanvasTexture(canvas);
   }
 
   /**
-   * Create a realistic apple with stem and leaf
+   * Create a modern glowing energy orb
    */
   private createRealisticApple(config: GameConfig): void {
     // Main apple body
@@ -196,61 +122,22 @@ export class Food extends EventManager {
     const appleTexture = this.createAppleTexture();
     const appleMaterial = new MeshStandardMaterial({
       map: appleTexture,
-      normalMap: appleTexture, // Add normal mapping for better depth
-      normalScale: new Vector2(0.4, 0.4),
-      roughness: 0.25, // Shinier apple surface
-      metalness: 0.15, // Slight metalness for realistic reflection
-      emissive: new Color(0x441111), // Brighter emissive for "juicy" look
-      emissiveIntensity: 0.2, // Stronger glow
-      envMapIntensity: 0.7 // Enhanced environment reflections
+      transparent: true,
+      opacity: 0.95,
+      roughness: 0.1, // Very smooth, glossy surface
+      metalness: 0.3, // Slight metalness
+      emissive: new Color(0xff00ff), // Bright magenta glow
+      emissiveIntensity: 1.0, // Very strong glow for energy orb effect
+      envMapIntensity: 1.5 // Strong environment reflections
     });
     
     this.mesh = new Mesh(appleGeometry, appleMaterial);
-    this.mesh.castShadow = true; // Only main apple casts shadow
-    this.mesh.receiveShadow = true;
+    this.mesh.castShadow = false; // No shadow for glowing orb
+    this.mesh.receiveShadow = false;
     
-    // Create stem
-    const stemGeometry = new CylinderGeometry(0.1, 0.15, 0.4, 8);
-    const stemTexture = this.createStemTexture();
-    const stemMaterial = new MeshStandardMaterial({
-      map: stemTexture,
-      normalMap: stemTexture,
-      normalScale: new Vector2(0.5, 0.5),
-      roughness: 0.85, // Very rough wood surface
-      metalness: 0.0
-    });
-    
-    this.stemMesh = new Mesh(stemGeometry, stemMaterial);
-    this.stemMesh.position.set(0, config.foodSize / 2 + 0.2, 0);
-    this.stemMesh.castShadow = false; // Disable for performance
-    this.stemMesh.receiveShadow = true;
-    
-    // Create leaf
-    const leafGeometry = new SphereGeometry(0.3, 8, 6);
-    leafGeometry.scale(2, 0.1, 1); // Flatten to make leaf-like
-    const leafTexture = this.createLeafTexture();
-    const leafMaterial = new MeshStandardMaterial({
-      map: leafTexture,
-      normalMap: leafTexture,
-      normalScale: new Vector2(0.3, 0.3),
-      roughness: 0.5, // Slightly smoother leaf
-      metalness: 0.0,
-      transparent: true,
-      opacity: 0.9,
-      emissive: new Color(0x112211), // Slight green glow
-      emissiveIntensity: 0.1
-    });
-    
-    this.leafMesh = new Mesh(leafGeometry, leafMaterial);
-    this.leafMesh.position.set(0.3, config.foodSize / 2 + 0.3, 0.1);
-    this.leafMesh.rotation.z = Math.PI / 6;
-    this.leafMesh.castShadow = false; // Disable for performance
-    this.leafMesh.receiveShadow = true;
-    
-    // Add all parts to the group
+    // Energy orb is just the main mesh
+    // Add mesh to the group
     this.foodGroup.add(this.mesh);
-    this.foodGroup.add(this.stemMesh);
-    this.foodGroup.add(this.leafMesh);
   }
 
   /**
@@ -311,24 +198,18 @@ export class Food extends EventManager {
     
     this.foodGroup.position.y = 1 + floatOffset + bobbing;
     
-    // Gentle rotation for the apple
-    this.mesh.rotation.y += deltaTime * 0.8;
-    
-    // Leaf gentle swaying
-    this.leafMesh.rotation.z = Math.PI / 6 + Math.sin(this.animationTime * 2.5) * 0.2;
-    this.leafMesh.rotation.y = Math.sin(this.animationTime * 1.8) * 0.3;
-    
-    // Stem slight movement
-    this.stemMesh.rotation.x = Math.sin(this.animationTime * 2.2) * 0.1;
+    // Smooth rotation for the energy orb
+    this.mesh.rotation.y += deltaTime * 1.2;
+    this.mesh.rotation.x += deltaTime * 0.5;
     
     // Update glow light position and create pulsing effect
     this.glowLight.position.copy(this.foodGroup.position);
     this.glowLight.position.y += 1;
-    this.glowLight.intensity = 1.5 + Math.sin(this.animationTime * 4) * 0.4;
+    this.glowLight.intensity = 3.0 + Math.sin(this.animationTime * 4) * 0.8; // Stronger pulse
     
-    // Color variation in the light
-    const colorShift = Math.sin(this.animationTime * 3) * 0.1;
-    this.glowLight.color.setHSL(0.05 + colorShift, 1, 0.6); // Red-orange variation
+    // Color variation in the light - magenta to cyan
+    const colorShift = Math.sin(this.animationTime * 3) * 0.15;
+    this.glowLight.color.setHSL(0.83 + colorShift, 1, 0.6); // Magenta-pink variation
   }
 
   /**

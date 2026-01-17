@@ -41,7 +41,7 @@ export class Renderer {
     // Renderer setup with advanced features - full screen
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(new Color(0x2a2a2a), 1); // Dark charcoal background
+    this.renderer.setClearColor(new Color(0x0a0e1a), 1); // Deep dark blue-purple background
     
     // Optimized shadow settings
     this.renderer.shadowMap.enabled = true;
@@ -51,7 +51,7 @@ export class Renderer {
     
     // Enable advanced tone mapping for HDR-like colors
     this.renderer.toneMapping = 1; // ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.2; // Slightly reduced for better performance
+    this.renderer.toneMappingExposure = 1.4; // Increased for vibrant modern look
     
     // Enable physically correct lights for realistic rendering
     this.renderer.useLegacyLights = false;
@@ -67,8 +67,8 @@ export class Renderer {
     this.camera.position.set(0, 35, 35); // Higher and further back for better view
     this.camera.lookAt(0, 0, 0);
 
-    // Add atmospheric fog matching dark background - extended range
-    this.scene.fog = new Fog(0x2a2a2a, 50, 150);
+    // Add atmospheric fog matching modern dark background - extended range
+    this.scene.fog = new Fog(0x0a0e1a, 50, 150);
 
     // Setup enhanced lighting
     this.setupLighting();
@@ -78,17 +78,17 @@ export class Renderer {
   }
 
   /**
-   * Setup modern outdoor lighting with realistic effects
+   * Setup modern neon/cyber lighting with vibrant effects
    */
   private setupLighting(): void {
-    // Hemisphere light for dark background with ground lighting (increased intensity)
-    const hemisphereLight = new HemisphereLight(0x505050, 0x2d5a2d, 0.6);
+    // Hemisphere light with modern cyan/purple tones
+    const hemisphereLight = new HemisphereLight(0x1a1f2e, 0x0a0e1a, 0.8);
     hemisphereLight.position.set(0, 50, 0);
     this.scene.add(hemisphereLight);
     this.lights.push(hemisphereLight);
 
-    // Main directional light (sun) with enhanced settings
-    const mainLight = new DirectionalLight(0xFFFFEE, 2.5); // Increased intensity and warmer
+    // Main directional light with cool blue-white tone
+    const mainLight = new DirectionalLight(0x88ccff, 3.0); // Bright cyan-white
     mainLight.position.set(15, 30, 10);
     mainLight.castShadow = true;
     
@@ -99,30 +99,30 @@ export class Renderer {
     mainLight.shadow.camera.right = 30;
     mainLight.shadow.camera.top = 30;
     mainLight.shadow.camera.bottom = -30;
-    mainLight.shadow.mapSize.width = 2048; // Reduced for better performance
+    mainLight.shadow.mapSize.width = 2048;
     mainLight.shadow.mapSize.height = 2048;
-    mainLight.shadow.radius = 6; // Reduced blur samples for performance
-    mainLight.shadow.blurSamples = 15; // Reduced blur samples
+    mainLight.shadow.radius = 6;
+    mainLight.shadow.blurSamples = 15;
 
     this.scene.add(mainLight);
     this.lights.push(mainLight);
 
-    // Fill light for softer shadows (warm afternoon light) - enhanced
-    const fillLight = new DirectionalLight(0xFFE4B5, 0.6); // Increased intensity
-    fillLight.position.set(-10, 20, -10);
-    fillLight.castShadow = false; // Don't cast shadows to improve performance
-    this.scene.add(fillLight);
-    this.lights.push(fillLight);
+    // Accent light with purple/magenta tone
+    const accentLight = new DirectionalLight(0xff66cc, 1.2);
+    accentLight.position.set(-10, 20, -10);
+    accentLight.castShadow = false;
+    this.scene.add(accentLight);
+    this.lights.push(accentLight);
     
-    // Additional rim light for better depth perception
-    const rimLight = new DirectionalLight(0xCCE0FF, 0.5);
+    // Neon rim light for cyber aesthetic
+    const rimLight = new DirectionalLight(0x00ffff, 1.0);
     rimLight.position.set(5, 10, -15);
     rimLight.castShadow = false;
     this.scene.add(rimLight);
     this.lights.push(rimLight);
 
-    // Ambient light for overall natural illumination - warmer tone
-    const ambientLight = new AmbientLight(0xFFFFE5, 0.4); // Increased intensity
+    // Ambient light with modern cool tone
+    const ambientLight = new AmbientLight(0x334455, 0.6);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
   }

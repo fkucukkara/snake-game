@@ -172,24 +172,24 @@ export class ParticleSystem {
   }
 
   /**
-   * Create food collection effect
+   * Create food collection effect with modern magenta-cyan colors
    */
   createFoodCollectionEffect(position: Vector3): void {
-    this.emit(position, new Color(0xffff00), 30, 1.5);
+    this.emit(position, new Color(0xff00ff), 40, 2.0); // Bright magenta particles
   }
 
   /**
-   * Create snake trail effect
+   * Create snake trail effect with cyan particles
    */
   createTrailEffect(position: Vector3): void {
-    this.emit(position, new Color(0x00ff44), 5, 0.5);
+    this.emit(position, new Color(0x00ffff), 5, 0.5);
   }
 
   /**
-   * Create collision effect
+   * Create collision effect with red-orange particles
    */
   createCollisionEffect(position: Vector3): void {
-    this.emit(position, new Color(0xff4444), 50, 3);
+    this.emit(position, new Color(0xff6600), 60, 3.5); // Orange-red for impact
   }
 
   /**
