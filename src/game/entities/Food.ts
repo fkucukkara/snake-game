@@ -206,7 +206,7 @@ export class Food extends EventManager {
     });
     
     this.mesh = new Mesh(appleGeometry, appleMaterial);
-    this.mesh.castShadow = true;
+    this.mesh.castShadow = true; // Only main apple casts shadow
     this.mesh.receiveShadow = true;
     
     // Create stem
@@ -222,7 +222,7 @@ export class Food extends EventManager {
     
     this.stemMesh = new Mesh(stemGeometry, stemMaterial);
     this.stemMesh.position.set(0, config.foodSize / 2 + 0.2, 0);
-    this.stemMesh.castShadow = true;
+    this.stemMesh.castShadow = false; // Disable for performance
     this.stemMesh.receiveShadow = true;
     
     // Create leaf
@@ -244,7 +244,7 @@ export class Food extends EventManager {
     this.leafMesh = new Mesh(leafGeometry, leafMaterial);
     this.leafMesh.position.set(0.3, config.foodSize / 2 + 0.3, 0.1);
     this.leafMesh.rotation.z = Math.PI / 6;
-    this.leafMesh.castShadow = true;
+    this.leafMesh.castShadow = false; // Disable for performance
     this.leafMesh.receiveShadow = true;
     
     // Add all parts to the group

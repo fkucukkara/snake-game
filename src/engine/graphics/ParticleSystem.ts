@@ -124,13 +124,16 @@ export class ParticleSystem {
   }
 
   /**
-   * Update particle system
+   * Update particle system (optimized)
    */
   update(deltaTime: number): void {
     let needsUpdate = false;
+    let activeParticles = 0;
     
+    // Batch update for better performance
     for (let i = 0; i < this.particleCount; i++) {
       if (this.lifetimes[i] > 0) {
+        activeParticles++;
         const i3 = i * 3;
         
         // Update lifetime
@@ -143,14 +146,14 @@ export class ParticleSystem {
           this.positions[i3 + 2] += this.velocities[i3 + 2] * deltaTime;
           
           // Apply gravity with air resistance
-          this.velocities[i3 + 1] -= 12.0 * deltaTime; // Slightly stronger gravity
-          this.velocities[i3] *= 0.98; // Air resistance
+          this.velocities[i3 + 1] -= 12.0 * deltaTime;
+          this.velocities[i3] *= 0.98;
           this.velocities[i3 + 2] *= 0.98;
           
           // Fade out over time with better curve
           const lifeRatio = this.lifetimes[i] / this.maxLifetime;
-          const sizeCurve = Math.pow(lifeRatio, 0.7); // Non-linear fade for smoother effect
-          this.sizes[i] = (0.8 + Math.random() * 0.4) * sizeCurve; // Larger size range
+          const sizeCurve = Math.pow(lifeRatio, 0.7);
+          this.sizes[i] = (0.8 + Math.random() * 0.4) * sizeCurve;
           
           needsUpdate = true;
         } else {
@@ -160,7 +163,8 @@ export class ParticleSystem {
       }
     }
     
-    if (needsUpdate) {
+    // Only update geometry if there are active particles
+    if (needsUpdate && activeParticles > 0) {
       this.particles.geometry.getAttribute('position').needsUpdate = true;
       this.particles.geometry.getAttribute('color').needsUpdate = true;
       this.particles.geometry.getAttribute('size').needsUpdate = true;

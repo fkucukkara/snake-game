@@ -39,8 +39,8 @@ export class SnakeGame {
     this.renderer = new Renderer(canvas);
     this.inputManager = new InputManager();
     
-    // Initialize particle system
-    this.particles = new ParticleSystem(this.renderer.getScene(), 2000);
+    // Initialize particle system (reduced count for better performance)
+    this.particles = new ParticleSystem(this.renderer.getScene(), 1000);
     
   // Entities
     this.arena = new Arena(this.renderer.getScene(), this.config.arenaSize);
@@ -198,8 +198,12 @@ export class SnakeGame {
     }
 
     const currentTime = performance.now();
-    const deltaTime = currentTime - this.lastTime;
+    let deltaTime = currentTime - this.lastTime;
     this.lastTime = currentTime;
+
+    // Cap delta time to prevent large frame spikes (max 100ms = 10fps minimum)
+    const maxDeltaTime = 100;
+    deltaTime = Math.min(deltaTime, maxDeltaTime);
 
     this.update(deltaTime);
     this.render();
