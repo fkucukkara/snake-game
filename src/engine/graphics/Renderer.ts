@@ -43,14 +43,15 @@ export class Renderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(new Color(0x2a2a2a), 1); // Dark charcoal background
     
-    // Enhanced shadow settings for realistic shadows
+    // Optimized shadow settings
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = true;
+    this.renderer.shadowMap.needsUpdate = false; // Let Three.js manage updates
     
     // Enable advanced tone mapping for HDR-like colors
     this.renderer.toneMapping = 1; // ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.4; // Increased for brighter, more vibrant colors
+    this.renderer.toneMappingExposure = 1.2; // Slightly reduced for better performance
     
     // Enable physically correct lights for realistic rendering
     this.renderer.useLegacyLights = false;
@@ -91,17 +92,17 @@ export class Renderer {
     mainLight.position.set(15, 30, 10);
     mainLight.castShadow = true;
     
-    // Ultra high-quality shadow settings
+    // Optimized shadow settings for better performance
     mainLight.shadow.camera.near = 0.1;
     mainLight.shadow.camera.far = 120;
     mainLight.shadow.camera.left = -30;
     mainLight.shadow.camera.right = 30;
     mainLight.shadow.camera.top = 30;
     mainLight.shadow.camera.bottom = -30;
-    mainLight.shadow.mapSize.width = 4096; // Keep high resolution
-    mainLight.shadow.mapSize.height = 4096;
-    mainLight.shadow.radius = 10; // Softer shadows
-    mainLight.shadow.blurSamples = 30; // More blur samples
+    mainLight.shadow.mapSize.width = 2048; // Reduced for better performance
+    mainLight.shadow.mapSize.height = 2048;
+    mainLight.shadow.radius = 6; // Reduced blur samples for performance
+    mainLight.shadow.blurSamples = 15; // Reduced blur samples
 
     this.scene.add(mainLight);
     this.lights.push(mainLight);
@@ -152,8 +153,8 @@ export class Renderer {
     const offset = new Vector3(0, 35, 35); // Increased for larger arena
     const newPosition = targetPosition.clone().add(offset);
     
-    // Smooth camera following with easing
-    this.camera.position.lerp(newPosition, 0.05);
+    // Smooth camera following with consistent interpolation
+    this.camera.position.lerp(newPosition, 0.1);
     
     // Look at target with slight offset for better view
     const lookAtTarget = targetPosition.clone();

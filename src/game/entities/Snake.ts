@@ -26,7 +26,7 @@ export class Snake extends EventManager {
   private scene: Scene;
   private isGrowing: boolean = false;
   private moveTimer: number = 0;
-  private moveInterval: number = 200;
+  private moveInterval: number = 150; // Reduced for smoother, faster movement
   private headLight!: PointLight;
   private snakeGroup: Group;
 
@@ -243,7 +243,8 @@ export class Snake extends EventManager {
       mesh.rotation.x = Math.PI / 2; // Align cylinder along Z axis
     }
     
-    mesh.castShadow = true;
+    // Only head casts shadow for better performance
+    mesh.castShadow = isHead;
     mesh.receiveShadow = true;
     
     // Add subtle random rotation for more organic look
@@ -281,21 +282,20 @@ export class Snake extends EventManager {
   }
 
   /**
-   * Add subtle breathing/organic animation to snake body
+   * Add subtle breathing/organic animation to snake body (optimized)
    */
   private animateBody(_deltaTime: number): void {
+    // Only animate every few frames to reduce overhead
+    if (Math.random() > 0.3) return; // Skip ~70% of frames
+    
     const time = Date.now() * 0.001;
     
-    this.segments.forEach((segment, index) => {
-      if (index > 0) { // Skip head
-        const wave = Math.sin(time * 2 + index * 0.5) * 0.05;
-        segment.mesh.scale.y = 1 + wave;
-        
-        // Subtle side-to-side motion
-        const sway = Math.sin(time * 1.5 + index * 0.3) * 0.02;
-        segment.mesh.position.x = segment.position.x + sway;
-      }
-    });
+    // Only animate every 3rd segment to reduce computation
+    for (let index = 1; index < this.segments.length; index += 3) {
+      const segment = this.segments[index];
+      const wave = Math.sin(time * 2 + index * 0.5) * 0.03; // Reduced amplitude
+      segment.mesh.scale.y = 1 + wave;
+    }
   }
 
   /**
@@ -338,13 +338,13 @@ export class Snake extends EventManager {
     this.headLight.position.copy(newHeadPosition);
     this.headLight.position.y += 2;
 
-    // Move body segments with smooth following
+    // Move body segments with smooth following (optimized)
     for (let i = 1; i < this.segments.length; i++) {
       this.segments[i].position.copy(previousPositions[i - 1]);
       this.segments[i].mesh.position.copy(previousPositions[i - 1]);
       
-      // Add organic segment rotation based on movement
-      if (i < this.segments.length - 1) {
+      // Simplified rotation - only update every few segments for performance
+      if (i < this.segments.length - 1 && i % 2 === 0) {
         const currentPos = this.segments[i].position;
         const nextPos = this.segments[i + 1].position;
         const direction = new Vector3().subVectors(currentPos, nextPos).normalize();
