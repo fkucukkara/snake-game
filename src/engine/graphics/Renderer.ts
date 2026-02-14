@@ -153,8 +153,16 @@ export class Renderer {
     const offset = new Vector3(0, 35, 35); // Increased for larger arena
     const newPosition = targetPosition.clone().add(offset);
     
-    // Smooth camera following with consistent interpolation
-    this.camera.position.lerp(newPosition, 0.1);
+    // Calculate distance to target for adaptive lerp
+    const distance = this.camera.position.distanceTo(newPosition);
+    
+    // Adaptive lerp: faster when far, smoother when close
+    // Base lerp increased from 0.1 to 0.15 for more responsive following
+    const baseLerp = 0.15;
+    const adaptiveLerp = Math.min(baseLerp + (distance * 0.005), 0.25);
+    
+    // Smooth camera following with adaptive interpolation
+    this.camera.position.lerp(newPosition, adaptiveLerp);
     
     // Look at target with slight offset for better view
     const lookAtTarget = targetPosition.clone();

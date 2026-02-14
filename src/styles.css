@@ -179,6 +179,56 @@ body::before {
   margin-bottom: 0;
 }
 
+/* Music Controls */
+#musicControls {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  z-index: 100;
+}
+
+.music-button {
+  padding: var(--spacing-md);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.music-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.music-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+.music-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: transform var(--transition-base);
+}
+
+.music-button:hover .music-icon {
+  transform: scale(1.1);
+}
+
+.music-button.muted .music-icon {
+  opacity: 0.5;
+}
+
 /* Start Screen */
 #startScreen {
   position: absolute;
@@ -337,6 +387,21 @@ button:focus {
     left: var(--spacing-sm);
     font-size: 0.75rem;
     padding: var(--spacing-sm);
+  }
+  
+  #musicControls {
+    bottom: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
+  
+  .music-button {
+    width: 3rem;
+    height: 3rem;
+    padding: var(--spacing-sm);
+  }
+  
+  .music-icon {
+    font-size: 1.25rem;
   }
   
   #score,

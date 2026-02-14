@@ -1,5 +1,6 @@
 import { Renderer, ParticleSystem } from '@/engine/graphics';
 import { InputManager } from '@/engine/input/InputManager';
+import { AudioManager } from '@/engine/audio';
 import { Snake } from '@/game/entities/Snake';
 import { Food } from '@/game/entities/Food';
 import { Arena } from '@/game/entities/Arena';
@@ -9,6 +10,7 @@ import { GameState, Direction, GameConfig } from '@/types';
 export class SnakeGame {
   private renderer: Renderer;
   private inputManager: InputManager;
+  private audioManager: AudioManager;
   private snake: Snake;
   private food: Food;
   private arena: Arena;
@@ -38,6 +40,7 @@ export class SnakeGame {
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new Renderer(canvas);
     this.inputManager = new InputManager();
+    this.audioManager = new AudioManager();
     
     // Initialize particle system (reduced count for better performance)
     this.particles = new ParticleSystem(this.renderer.getScene(), 1000);
@@ -81,6 +84,10 @@ export class SnakeGame {
       }
     });
 
+    this.inputManager.on('music_toggle', () => {
+      this.audioManager.toggleMute();
+    });
+
   // Snake events
     this.snake.on('collision', () => {
       // Create collision particle effect
@@ -91,9 +98,21 @@ export class SnakeGame {
   // UI events
     const startButton = document.getElementById('startButton')!;
     const restartButton = document.getElementById('restartButton')!;
+    const musicToggle = document.getElementById('musicToggle')!;
 
     startButton.addEventListener('click', () => this.startGame());
     restartButton.addEventListener('click', () => this.restartGame());
+    
+    // Music toggle button
+    musicToggle.addEventListener('click', () => {
+      this.audioManager.toggleMute();
+      this.updateMusicButtonIcon(musicToggle);
+    });
+
+    // Listen to audio manager events to keep button in sync
+    this.audioManager.on('mute_toggled', (isMuted: boolean) => {
+      this.updateMusicButtonIcon(musicToggle);
+    });
 
   // Food events
     this.food.on('food_collected', (points: number) => {
@@ -122,6 +141,10 @@ export class SnakeGame {
     this.score = 0;
     this.updateScore();
     this.resetGame();
+    
+    // Start background music
+    this.audioManager.playMusic();
+    
     this.startGameLoop();
   }
 
@@ -133,6 +156,7 @@ export class SnakeGame {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
+    this.audioManager.pauseMusic();
   }
 
   /**
@@ -140,6 +164,7 @@ export class SnakeGame {
    */
   private resumeGame(): void {
     this.gameState = GameState.PLAYING;
+    this.audioManager.resumeMusic();
     this.startGameLoop();
   }
 
@@ -152,6 +177,9 @@ export class SnakeGame {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
+
+    // Stop background music
+    this.audioManager.stopMusic();
 
     // Update high score
     if (this.score > this.highScore) {
@@ -258,6 +286,24 @@ export class SnakeGame {
   }
 
   /**
+   * Update music button icon based on mute state
+   */
+  private updateMusicButtonIcon(button: HTMLElement): void {
+    const icon = button.querySelector('.music-icon') as HTMLElement;
+    const isMuted = this.audioManager.getIsMuted();
+    
+    if (icon) {
+      icon.textContent = isMuted ? '🔇' : '🔊';
+    }
+    
+    if (isMuted) {
+      button.classList.add('muted');
+    } else {
+      button.classList.remove('muted');
+    }
+  }
+
+  /**
    * Save high score to localStorage
    */
   private saveHighScore(): void {
@@ -289,5 +335,6 @@ export class SnakeGame {
     this.particles?.destroy();
     this.renderer?.destroy();
     this.inputManager?.destroy();
+    this.audioManager?.destroy();
   }
 }

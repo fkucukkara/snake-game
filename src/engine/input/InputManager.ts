@@ -60,7 +60,7 @@ export class InputManager extends EventManager {
     const gameKeys = [
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-      'Space'
+      'Space', 'KeyM'
     ];
     return gameKeys.includes(key);
   }
@@ -90,6 +90,9 @@ export class InputManager extends EventManager {
         break;
       case 'Space':
         this.emit('pause');
+        break;
+      case 'KeyM':
+        this.emit('music_toggle');
         break;
     }
 

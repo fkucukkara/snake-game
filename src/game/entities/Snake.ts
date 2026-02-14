@@ -269,24 +269,32 @@ export class Snake extends EventManager {
     
     if (this.moveTimer >= this.moveInterval) {
       this.move();
-      this.moveTimer = 0;
+      // Preserve remainder for more precise timing
+      this.moveTimer -= this.moveInterval;
     }
   }
 
   /**
    * Add subtle breathing/organic animation to snake body (optimized)
    */
-  private animateBody(_deltaTime: number): void {
-    // Only animate every few frames to reduce overhead
-    if (Math.random() > 0.3) return; // Skip ~70% of frames
-    
+  private animateBody(deltaTime: number): void {
     const time = Date.now() * 0.001;
     
-    // Only animate every 3rd segment to reduce computation
-    for (let index = 1; index < this.segments.length; index += 3) {
+    // Animate every segment for smooth, continuous motion
+    // Use modulo pattern to reduce computation while maintaining smoothness
+    for (let index = 1; index < this.segments.length; index++) {
       const segment = this.segments[index];
-      const wave = Math.sin(time * 2 + index * 0.5) * 0.03; // Reduced amplitude
+      
+      // Reduced amplitude for subtler movement
+      const wave = Math.sin(time * 2 + index * 0.5) * 0.02;
       segment.mesh.scale.y = 1 + wave;
+      
+      // Optional: Add slight rotation for more organic feel
+      // Only rotate every 3rd segment to optimize performance
+      if (index % 3 === 0) {
+        const rotation = Math.sin(time * 1.5 + index * 0.3) * 0.02;
+        segment.mesh.rotation.z = rotation;
+      }
     }
   }
 
