@@ -6,8 +6,7 @@ import {
   Color,
   BoxGeometry,
   RepeatWrapping,
-  CanvasTexture,
-  Vector2
+  CanvasTexture
 } from 'three';
 
 /**

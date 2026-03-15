@@ -110,7 +110,7 @@ export class SnakeGame {
     });
 
     // Listen to audio manager events to keep button in sync
-    this.audioManager.on('mute_toggled', (isMuted: boolean) => {
+    this.audioManager.on('mute_toggled', () => {
       this.updateMusicButtonIcon(musicToggle);
     });
 
@@ -250,6 +250,9 @@ export class SnakeGame {
     if (this.snake.checkFoodCollision(this.food.getPosition())) {
       // Create beautiful food collection particle effect
       this.particles.createFoodCollectionEffect(this.food.getPosition());
+      this.renderer.triggerCameraShake(0.9, 160);
+      this.snake.triggerEatAnimation();
+      void this.audioManager.playFoodCollectSound();
       
       this.snake.grow();
       this.score += this.food.collect();

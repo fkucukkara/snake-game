@@ -29,6 +29,9 @@ export class Snake extends EventManager {
   private moveInterval: number = 150; // Reduced for smoother, faster movement
   private headLight!: PointLight;
   private snakeGroup: Group;
+  private readonly eatPulseDuration: number = 220;
+  private eatPulseTimeRemaining: number = 0;
+  private readonly baseHeadLightIntensity: number = 4;
 
   constructor(scene: Scene, config: GameConfig) {
     super();
@@ -155,7 +158,7 @@ export class Snake extends EventManager {
    */
   private initialize(length: number): void {
     // Create head light with modern cyan glow
-    this.headLight = new PointLight(0x00ffff, 4, 18, 2); // Bright cyan, increased intensity and range
+    this.headLight = new PointLight(0x00ffff, this.baseHeadLightIntensity, 18, 2); // Bright cyan, increased intensity and range
     this.headLight.castShadow = true;
     this.headLight.shadow.mapSize.width = 1024;
     this.headLight.shadow.mapSize.height = 1024;
@@ -263,9 +266,10 @@ export class Snake extends EventManager {
    */
   update(deltaTime: number): void {
     this.moveTimer += deltaTime;
+    this.eatPulseTimeRemaining = Math.max(0, this.eatPulseTimeRemaining - deltaTime);
     
     // Add subtle body animation even when not moving
-    this.animateBody(deltaTime);
+    this.animateBody();
     
     if (this.moveTimer >= this.moveInterval) {
       this.move();
@@ -277,17 +281,38 @@ export class Snake extends EventManager {
   /**
    * Add subtle breathing/organic animation to snake body (optimized)
    */
-  private animateBody(deltaTime: number): void {
+  private animateBody(): void {
     const time = Date.now() * 0.001;
+    const eatPulseProgress = this.eatPulseTimeRemaining > 0
+      ? 1 - this.eatPulseTimeRemaining / this.eatPulseDuration
+      : 0;
+    const eatPulse = this.eatPulseTimeRemaining > 0
+      ? Math.sin(eatPulseProgress * Math.PI)
+      : 0;
+    const head = this.segments[0];
+
+    if (head) {
+      head.mesh.scale.set(
+        1 - eatPulse * 0.08,
+        1 + eatPulse * 0.12,
+        1 + eatPulse * 0.24,
+      );
+      this.headLight.intensity = this.baseHeadLightIntensity + eatPulse * 2.5;
+    } else {
+      this.headLight.intensity = this.baseHeadLightIntensity;
+    }
     
     // Animate every segment for smooth, continuous motion
     // Use modulo pattern to reduce computation while maintaining smoothness
     for (let index = 1; index < this.segments.length; index++) {
       const segment = this.segments[index];
+      const propagatedPulse = eatPulse * Math.max(0, 1 - index * 0.18);
       
       // Reduced amplitude for subtler movement
       const wave = Math.sin(time * 2 + index * 0.5) * 0.02;
-      segment.mesh.scale.y = 1 + wave;
+      segment.mesh.scale.x = 1 + propagatedPulse * 0.03;
+      segment.mesh.scale.y = (1 + wave) * (1 + propagatedPulse * 0.08);
+      segment.mesh.scale.z = 1 + propagatedPulse * 0.12;
       
       // Optional: Add slight rotation for more organic feel
       // Only rotate every 3rd segment to optimize performance
@@ -407,6 +432,13 @@ export class Snake extends EventManager {
   }
 
   /**
+   * Trigger a short pulse animation after eating food
+   */
+  triggerEatAnimation(): void {
+    this.eatPulseTimeRemaining = this.eatPulseDuration;
+  }
+
+  /**
    * Set the snake's direction
    */
   setDirection(direction: Direction): void {
@@ -507,6 +539,8 @@ export class Snake extends EventManager {
     this.nextDirection = Direction.RIGHT;
     this.isGrowing = false;
     this.moveTimer = 0;
+    this.eatPulseTimeRemaining = 0;
+    this.headLight.intensity = this.baseHeadLightIntensity;
     
     // Reinitialize
     this.initialize(3);

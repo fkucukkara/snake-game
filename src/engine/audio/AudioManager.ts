@@ -15,6 +15,8 @@ export class AudioManager extends EventManager {
   private synth1: Tone.PolySynth | null = null;
   private synth2: Tone.Synth | null = null;
   private bassline: Tone.Synth | null = null;
+  private foodImpactSynth: Tone.MonoSynth | null = null;
+  private foodBuzzSynth: Tone.NoiseSynth | null = null;
   private masterGain: Tone.Gain | null = null;
 
   // Tone.js patterns and sequences
@@ -76,6 +78,42 @@ export class AudioManager extends EventManager {
           release: 0.4,
         },
         volume: -10,
+      }).connect(this.masterGain);
+
+      // Food collect impact - punchy synth with a slight buzzing tail
+      this.foodImpactSynth = new Tone.MonoSynth({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: 0.001,
+          decay: 0.12,
+          sustain: 0,
+          release: 0.16,
+        },
+        filter: {
+          Q: 2,
+          type: 'bandpass',
+          rolloff: -24,
+        },
+        filterEnvelope: {
+          attack: 0.001,
+          decay: 0.08,
+          sustain: 0,
+          release: 0.1,
+          baseFrequency: 180,
+          octaves: 3,
+        },
+        volume: -8,
+      }).connect(this.masterGain);
+
+      this.foodBuzzSynth = new Tone.NoiseSynth({
+        noise: { type: 'pink' },
+        envelope: {
+          attack: 0.001,
+          decay: 0.07,
+          sustain: 0,
+          release: 0.04,
+        },
+        volume: -20,
       }).connect(this.masterGain);
 
       // Create musical patterns
@@ -235,6 +273,25 @@ export class AudioManager extends EventManager {
   }
 
   /**
+   * Play a short impact/buzz sound when the snake eats food
+   */
+  async playFoodCollectSound(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+
+    if (!this.foodImpactSynth || !this.foodBuzzSynth) {
+      return;
+    }
+
+    const now = Tone.now();
+
+    this.foodImpactSynth.triggerAttackRelease('G2', '32n', now, 0.95);
+    this.foodImpactSynth.triggerAttackRelease('D3', '16n', now + 0.045, 0.6);
+    this.foodBuzzSynth.triggerAttackRelease('32n', now, 0.45);
+  }
+
+  /**
    * Toggle mute state (preserves playback)
    */
   toggleMute(): void {
@@ -289,6 +346,8 @@ export class AudioManager extends EventManager {
     this.synth1?.dispose();
     this.synth2?.dispose();
     this.bassline?.dispose();
+    this.foodImpactSynth?.dispose();
+    this.foodBuzzSynth?.dispose();
     this.masterGain?.dispose();
 
     // Clear references
@@ -298,6 +357,8 @@ export class AudioManager extends EventManager {
     this.synth1 = null;
     this.synth2 = null;
     this.bassline = null;
+    this.foodImpactSynth = null;
+    this.foodBuzzSynth = null;
     this.masterGain = null;
 
     this.isInitialized = false;

@@ -21,8 +21,12 @@ export class Renderer {
   private scene: Scene;
   private camera: PerspectiveCamera;
   private lights: (AmbientLight | DirectionalLight | HemisphereLight | PointLight)[] = [];
+  private readonly cameraOffset: Vector3 = new Vector3(0, 35, 35);
+  private cameraShakeStartTime: number = 0;
+  private cameraShakeDuration: number = 0;
+  private cameraShakeIntensity: number = 0;
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ 
       canvas, 
       antialias: true,
@@ -150,8 +154,9 @@ export class Renderer {
    * Update camera position (for following snake)
    */
   updateCamera(targetPosition: Vector3): void {
-    const offset = new Vector3(0, 35, 35); // Increased for larger arena
-    const newPosition = targetPosition.clone().add(offset);
+    const newPosition = targetPosition.clone().add(this.cameraOffset);
+    const currentShakeOffset = this.getCameraShakeOffset();
+    newPosition.add(currentShakeOffset);
     
     // Calculate distance to target for adaptive lerp
     const distance = this.camera.position.distanceTo(newPosition);
@@ -168,6 +173,41 @@ export class Renderer {
     const lookAtTarget = targetPosition.clone();
     lookAtTarget.y += 1;
     this.camera.lookAt(lookAtTarget);
+  }
+
+  /**
+   * Trigger a small camera shake for impactful moments
+   */
+  triggerCameraShake(intensity: number = 0.8, duration: number = 180): void {
+    this.cameraShakeStartTime = performance.now();
+    this.cameraShakeDuration = duration;
+    this.cameraShakeIntensity = intensity;
+  }
+
+  /**
+   * Compute the current camera shake offset with quick falloff
+   */
+  private getCameraShakeOffset(): Vector3 {
+    if (this.cameraShakeDuration <= 0) {
+      return new Vector3();
+    }
+
+    const elapsed = performance.now() - this.cameraShakeStartTime;
+    if (elapsed >= this.cameraShakeDuration) {
+      this.cameraShakeDuration = 0;
+      this.cameraShakeIntensity = 0;
+      return new Vector3();
+    }
+
+    const progress = elapsed / this.cameraShakeDuration;
+    const damping = 1 - progress;
+    const intensity = this.cameraShakeIntensity * damping;
+
+    return new Vector3(
+      (Math.random() - 0.5) * intensity,
+      (Math.random() - 0.5) * intensity * 0.45,
+      (Math.random() - 0.5) * intensity,
+    );
   }
 
   /**
