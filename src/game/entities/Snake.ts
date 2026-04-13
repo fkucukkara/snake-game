@@ -2,36 +2,41 @@ import {
   MeshStandardMaterial,
   Mesh,
   Vector3,
-  Vector2,
   Scene,
   Color,
   PointLight,
-  CylinderGeometry,
   Group,
   CanvasTexture,
   RepeatWrapping,
-  BufferGeometry,
-  Quaternion,
-  LatheGeometry
+  CatmullRomCurve3,
+  TubeGeometry
 } from 'three';
-import { SnakeSegment, Direction, GameConfig } from '@/types';
+import { Direction, GameConfig } from '@/types';
 import { EventManager } from '@/engine/core/EventManager';
 
-// Snake entity with realistic graphics
+export interface SnakeSegment {
+  position: Vector3;
+}
+
 export class Snake extends EventManager {
   private segments: SnakeSegment[] = [];
+  private visualSegments: Vector3[] = [];
   private direction: Direction = Direction.RIGHT;
   private nextDirection: Direction = Direction.RIGHT;
   private segmentSize: number;
   private scene: Scene;
   private isGrowing: boolean = false;
   private moveTimer: number = 0;
-  private moveInterval: number = 150; // Reduced for smoother, faster movement
+  private baseMoveInterval: number = 150;
   private headLight!: PointLight;
   private snakeGroup: Group;
-  private readonly eatPulseDuration: number = 220;
   private eatPulseTimeRemaining: number = 0;
+  private readonly eatPulseDuration: number = 220;
   private readonly baseHeadLightIntensity: number = 4;
+  
+  private tubeMesh!: Mesh;
+  private isDashing: boolean = false;
+  private texture!: CanvasTexture;
 
   constructor(scene: Scene, config: GameConfig) {
     super();
@@ -42,538 +47,243 @@ export class Snake extends EventManager {
     this.initialize(config.initialSnakeLength);
   }
 
-  /**
-   * Create modern metallic snake texture with neon accents
-   */
-  private createSnakeTexture(isHead: boolean = false): CanvasTexture {
+  private createSnakeTexture(): CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
-    
     const context = canvas.getContext('2d')!;
     
-    if (isHead) {
-      // Head texture with modern cyan-magenta gradient
-      const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
-      gradient.addColorStop(0, '#00ffff');
-      gradient.addColorStop(0.4, '#0088ff');
-      gradient.addColorStop(0.7, '#6600ff');
-      gradient.addColorStop(1, '#330044');
-      
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 256, 256);
-      
-      // Add hexagonal tech pattern for head
-      for (let y = 0; y < 256; y += 24) {
-        for (let x = 0; x < 256; x += 24) {
-          const offset = (y / 24) % 2 === 0 ? 0 : 12;
-          const patternX = x + offset;
-          
-          // Hexagonal outline
-          context.strokeStyle = 'rgba(0, 255, 255, 0.5)';
-          context.lineWidth = 2;
-          context.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const angle = (i * Math.PI) / 3;
-            const px = patternX + Math.cos(angle) * 8;
-            const py = y + Math.sin(angle) * 8;
-            if (i === 0) context.moveTo(px, py);
-            else context.lineTo(px, py);
-          }
-          context.closePath();
-          context.stroke();
-        }
-      }
-      
-      // Add glowing eyes
-      context.fillStyle = '#ffffff';
+    const gradient = context.createLinearGradient(0, 0, 0, 256);
+    gradient.addColorStop(0, '#00ffff');
+    gradient.addColorStop(0.5, '#0066ff');
+    gradient.addColorStop(1, '#3300aa');
+    
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 256, 256);
+    
+    // Add grid/circuit pattern
+    for (let y = 0; y < 256; y += 32) {
+      context.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+      context.lineWidth = 2;
       context.beginPath();
-      context.arc(96, 96, 10, 0, Math.PI * 2);
-      context.fill();
-      context.beginPath();
-      context.arc(160, 96, 10, 0, Math.PI * 2);
-      context.fill();
-      
-      // Eye glow
-      context.fillStyle = 'rgba(0, 255, 255, 0.8)';
-      context.beginPath();
-      context.arc(96, 96, 6, 0, Math.PI * 2);
-      context.fill();
-      context.beginPath();
-      context.arc(160, 96, 6, 0, Math.PI * 2);
-      context.fill();
-      
-    } else {
-      // Body texture with modern cyan gradient and tech patterns
-      const gradient = context.createLinearGradient(0, 0, 0, 256);
-      gradient.addColorStop(0, '#00aaff');
-      gradient.addColorStop(0.5, '#0066ff');
-      gradient.addColorStop(1, '#3300aa');
-      
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 256, 256);
-      
-      // Add tech line pattern
-      for (let y = 0; y < 256; y += 32) {
-        context.strokeStyle = 'rgba(0, 255, 255, 0.4)';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.moveTo(0, y);
-        context.lineTo(256, y);
-        context.stroke();
-      }
-      
-      // Add circuit-like pattern
-      for (let y = 0; y < 256; y += 40) {
-        for (let x = 0; x < 256; x += 40) {
-          context.strokeStyle = 'rgba(255, 102, 204, 0.3)';
-          context.lineWidth = 1;
-          context.beginPath();
-          context.arc(x, y, 3, 0, Math.PI * 2);
-          context.stroke();
-        }
-      }
-      
-      // Add subtle highlights
-      for (let i = 0; i < 30; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const size = Math.random() * 3 + 1;
-        
-        context.fillStyle = `rgba(0, 255, 255, ${Math.random() * 0.4 + 0.2})`;
-        context.beginPath();
-        context.arc(x, y, size, 0, Math.PI * 2);
-        context.fill();
-      }
+      context.moveTo(0, y);
+      context.lineTo(256, y);
+      context.stroke();
     }
     
     const texture = new CanvasTexture(canvas);
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
+    texture.repeat.set(1, 10); // Repeat along tube
     return texture;
   }
 
-  /**
-   * Initialize snake with starting segments
-   */
   private initialize(length: number): void {
-    // Create head light with modern cyan glow
-    this.headLight = new PointLight(0x00ffff, this.baseHeadLightIntensity, 18, 2); // Bright cyan, increased intensity and range
+    this.headLight = new PointLight(0x00ffff, this.baseHeadLightIntensity, 18, 2);
     this.headLight.castShadow = true;
     this.headLight.shadow.mapSize.width = 1024;
     this.headLight.shadow.mapSize.height = 1024;
     this.scene.add(this.headLight);
     
+    // Create segments
     for (let i = 0; i < length; i++) {
-      this.createRealisticSegment(i, -i * this.segmentSize, 0, 0);
+        const pos = new Vector3(-i * this.segmentSize, 0, 0);
+        this.segments.push({ position: pos.clone() });
+        this.visualSegments.push(pos.clone());
     }
+
+    // Material
+    this.texture = this.createSnakeTexture();
+    const material = new MeshStandardMaterial({
+      map: this.texture,
+      roughness: 0.1,
+      metalness: 0.8,
+      emissive: new Color(0x0088ff),
+      emissiveIntensity: 0.5,
+      envMapIntensity: 1.5
+    });
+
+    this.tubeMesh = new Mesh(new TubeGeometry(this.getCurve(), 64, this.segmentSize * 0.45, 8, false), material);
+    this.tubeMesh.castShadow = true;
+    this.tubeMesh.receiveShadow = true;
+    this.snakeGroup.add(this.tubeMesh);
+    
+    this.headLight.position.copy(this.visualSegments[0]);
+    this.headLight.position.y += 2;
   }
 
-  /**
-   * Create a realistic snake segment with organic geometry
-   */
-  private createRealisticSegment(index: number, x: number, y: number, z: number): void {
-    const isHead = index === 0;
-    
-    let geometry: BufferGeometry;
-    let material: MeshStandardMaterial;
-    
-    if (isHead) {
-      // Create head with more organic shape using Vector2 for LatheGeometry
-      const headPoints = [];
-      for (let i = 0; i <= 10; i++) {
-        const angle = (i / 10) * Math.PI;
-        const radius = Math.sin(angle) * 0.7;
-        const y = (i / 10) * this.segmentSize - this.segmentSize * 0.5;
-        headPoints.push(new Vector2(radius, y));
-      }
-      
-      geometry = new LatheGeometry(headPoints, 16);
-      
-      const headTexture = this.createSnakeTexture(true);
-      material = new MeshStandardMaterial({
-        map: headTexture,
-        normalMap: headTexture, // Use same texture as normal map for more detail
-        normalScale: new Vector2(0.3, 0.3), // Subtle normal mapping
-        roughness: 0.4, // Slightly rougher for realistic skin
-        metalness: 0.05, // Very slight metalness
-        emissive: new Color(0x0a2a0a), // Brighter emissive
-        emissiveIntensity: 0.15 // Slight glow
-      });
-      
-    } else {
-      // Create body segments with organic cylindrical shape
-      const radiusTop = this.segmentSize * 0.5;
-      const radiusBottom = this.segmentSize * 0.48; // Slight taper
-      const height = this.segmentSize * 0.9;
-      const segments = 16;
-      
-      geometry = new CylinderGeometry(radiusTop, radiusBottom, height, segments, 1);
-      
-      // Calculate color gradient from head to tail
-      const colorIntensity = Math.max(0.4, 1 - (index * 0.08));
-      
-      const bodyTexture = this.createSnakeTexture(false);
-      
-      material = new MeshStandardMaterial({
-        map: bodyTexture,
-        roughness: 0.25, // Smooth, reflective surface
-        metalness: 0.85, // Highly metallic like chrome
-        emissive: new Color(0x0088ff), // Blue-cyan glow
-        emissiveIntensity: 0.25, // Moderate neon glow
-        envMapIntensity: 1.0 // Strong reflections
-      });
-      
-      // Adjust material color based on position for gradient effect
-      const baseColor = new Color(0x0066ff);
-      baseColor.lerp(new Color(0x3300aa), 1 - colorIntensity);
-      material.color = baseColor;
-    }
-    
-    const mesh = new Mesh(geometry, material);
-    
-    // Position and rotate segment
-    mesh.position.set(x, y, z);
-    if (!isHead) {
-      mesh.rotation.x = Math.PI / 2; // Align cylinder along Z axis
-    }
-    
-    // Only head casts shadow for better performance
-    mesh.castShadow = isHead;
-    mesh.receiveShadow = true;
-    
-    // Add subtle random rotation for more organic look
-    mesh.rotation.y += (Math.random() - 0.5) * 0.2;
-    
-    const segment: SnakeSegment = {
-      position: mesh.position.clone(),
-      rotation: mesh.quaternion.clone(),
-      mesh
-    };
-    
-    this.segments.push(segment);
-    this.snakeGroup.add(mesh);
-    
-    // Update head light position
-    if (isHead) {
-      this.headLight.position.copy(mesh.position);
-      this.headLight.position.y += 2;
-    }
+  private getCurve(): CatmullRomCurve3 {
+    // If only one segment, CatmullRomCurve3 needs at least 2 points
+    const points = this.visualSegments.length > 1 ? this.visualSegments : [this.visualSegments[0], this.visualSegments[0].clone().add(new Vector3(0.1,0,0))];
+    return new CatmullRomCurve3(points, false, 'catmullrom', 0.5);
   }
 
-  /**
-   * Update snake position and movement with smoother animations
-   */
   update(deltaTime: number): void {
     this.moveTimer += deltaTime;
     this.eatPulseTimeRemaining = Math.max(0, this.eatPulseTimeRemaining - deltaTime);
+
+    // Animating texture
+    if (this.texture) {
+       this.texture.offset.x -= deltaTime * 0.002 * (this.isDashing ? 2 : 1);
+    }
     
-    // Add subtle body animation even when not moving
-    this.animateBody();
+    const moveInterval = this.isDashing ? this.baseMoveInterval * 0.4 : this.baseMoveInterval;
     
-    if (this.moveTimer >= this.moveInterval) {
+    if (this.moveTimer >= moveInterval) {
       this.move();
-      // Preserve remainder for more precise timing
-      this.moveTimer -= this.moveInterval;
+      // Ensure we don't build up too much time if frame drops
+      this.moveTimer = this.moveTimer > moveInterval * 2 ? 0 : this.moveTimer - moveInterval;
     }
+
+    // Lerp visual segments
+    const lerpFactor = Math.min(1.0, deltaTime * 0.02 * (this.isDashing ? 1.5 : 1.0));
+    for (let i = 0; i < this.segments.length; i++) {
+       // if we have visual segments lagging, push one if needed
+       if (!this.visualSegments[i]) {
+           this.visualSegments[i] = this.segments[i].position.clone();
+       }
+       this.visualSegments[i].lerp(this.segments[i].position, lerpFactor);
+    }
+
+    // Add eat pulse effect to radius interpolation if desired
+    const eatPulse = this.eatPulseTimeRemaining > 0 ? Math.sin((1 - this.eatPulseTimeRemaining / this.eatPulseDuration) * Math.PI) : 0;
+    this.headLight.intensity = this.baseHeadLightIntensity + eatPulse * 3;
+
+    // Update geometry
+    if (this.tubeMesh.geometry) {
+        this.tubeMesh.geometry.dispose();
+    }
+    const radius = this.segmentSize * 0.45 + (eatPulse * 0.1);
+    this.tubeMesh.geometry = new TubeGeometry(this.getCurve(), Math.max(20, this.visualSegments.length * 4), radius, 8, false);
+
+    // Update headlight
+    this.headLight.position.copy(this.visualSegments[0]);
+    this.headLight.position.y += 2;
   }
 
-  /**
-   * Add subtle breathing/organic animation to snake body (optimized)
-   */
-  private animateBody(): void {
-    const time = Date.now() * 0.001;
-    const eatPulseProgress = this.eatPulseTimeRemaining > 0
-      ? 1 - this.eatPulseTimeRemaining / this.eatPulseDuration
-      : 0;
-    const eatPulse = this.eatPulseTimeRemaining > 0
-      ? Math.sin(eatPulseProgress * Math.PI)
-      : 0;
-    const head = this.segments[0];
-
-    if (head) {
-      head.mesh.scale.set(
-        1 - eatPulse * 0.08,
-        1 + eatPulse * 0.12,
-        1 + eatPulse * 0.24,
-      );
-      this.headLight.intensity = this.baseHeadLightIntensity + eatPulse * 2.5;
-    } else {
-      this.headLight.intensity = this.baseHeadLightIntensity;
-    }
-    
-    // Animate every segment for smooth, continuous motion
-    // Use modulo pattern to reduce computation while maintaining smoothness
-    for (let index = 1; index < this.segments.length; index++) {
-      const segment = this.segments[index];
-      const propagatedPulse = eatPulse * Math.max(0, 1 - index * 0.18);
-      
-      // Reduced amplitude for subtler movement
-      const wave = Math.sin(time * 2 + index * 0.5) * 0.02;
-      segment.mesh.scale.x = 1 + propagatedPulse * 0.03;
-      segment.mesh.scale.y = (1 + wave) * (1 + propagatedPulse * 0.08);
-      segment.mesh.scale.z = 1 + propagatedPulse * 0.12;
-      
-      // Optional: Add slight rotation for more organic feel
-      // Only rotate every 3rd segment to optimize performance
-      if (index % 3 === 0) {
-        const rotation = Math.sin(time * 1.5 + index * 0.3) * 0.02;
-        segment.mesh.rotation.z = rotation;
-      }
-    }
-  }
-
-  /**
-   * Move the snake forward with enhanced smoothness
-   */
   private move(): void {
-    // Direction update
     this.direction = this.nextDirection;
 
-    // Head position
     const head = this.segments[0];
     const newHeadPosition = head.position.clone();
     
     switch (this.direction) {
-      case Direction.RIGHT:
-        newHeadPosition.x += this.segmentSize;
-        break;
-      case Direction.LEFT:
-        newHeadPosition.x -= this.segmentSize;
-        break;
-      case Direction.FORWARD:
-        newHeadPosition.z -= this.segmentSize;
-        break;
-      case Direction.BACKWARD:
-        newHeadPosition.z += this.segmentSize;
-        break;
+      case Direction.RIGHT: newHeadPosition.x += this.segmentSize; break;
+      case Direction.LEFT: newHeadPosition.x -= this.segmentSize; break;
+      case Direction.FORWARD: newHeadPosition.z -= this.segmentSize; break;
+      case Direction.BACKWARD: newHeadPosition.z += this.segmentSize; break;
     }
 
-    // Store previous positions
-    const previousPositions = this.segments.map(segment => segment.position.clone());
+    const previousPositions = this.segments.map(s => s.position.clone());
 
-    // Move head
+    // Move logic segments
     head.position.copy(newHeadPosition);
-    head.mesh.position.copy(newHeadPosition);
-    
-    // Rotate head to face movement direction
-    this.rotateHeadToDirection();
-    
-    // Update head light position
-    this.headLight.position.copy(newHeadPosition);
-    this.headLight.position.y += 2;
-
-    // Move body segments with smooth following (optimized)
     for (let i = 1; i < this.segments.length; i++) {
       this.segments[i].position.copy(previousPositions[i - 1]);
-      this.segments[i].mesh.position.copy(previousPositions[i - 1]);
-      
-      // Simplified rotation - only update every few segments for performance
-      if (i < this.segments.length - 1 && i % 2 === 0) {
-        const currentPos = this.segments[i].position;
-        const nextPos = this.segments[i + 1].position;
-        const direction = new Vector3().subVectors(currentPos, nextPos).normalize();
-        
-        this.segments[i].mesh.lookAt(currentPos.clone().add(direction));
-        this.segments[i].mesh.rotateX(Math.PI / 2); // Correct orientation
-      }
     }
 
-    // Growth
     if (this.isGrowing) {
-      this.addRealisticSegment(previousPositions[previousPositions.length - 1]);
+      this.segments.push({ position: previousPositions[previousPositions.length - 1] });
+      // Keep visual segment clumped at tail until it lerps out
+      this.visualSegments.push(this.visualSegments[this.visualSegments.length - 1].clone());
       this.isGrowing = false;
     }
 
-    // Collisions
     if (this.checkSelfCollision() || this.checkWallCollision()) {
       this.emit('collision');
     }
   }
 
-  /**
-   * Rotate snake head to face movement direction
-   */
-  private rotateHeadToDirection(): void {
-    const head = this.segments[0];
-    const targetRotation = new Quaternion();
-    
-    switch (this.direction) {
-      case Direction.RIGHT:
-        targetRotation.setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
-        break;
-      case Direction.LEFT:
-        targetRotation.setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI / 2);
-        break;
-      case Direction.FORWARD:
-        targetRotation.setFromAxisAngle(new Vector3(0, 1, 0), 0);
-        break;
-      case Direction.BACKWARD:
-        targetRotation.setFromAxisAngle(new Vector3(0, 1, 0), Math.PI);
-        break;
-    }
-    
-    head.mesh.quaternion.slerp(targetRotation, 0.3);
+  setDash(dashing: boolean): void {
+      this.isDashing = dashing;
   }
 
-  /**
-   * Add a new realistic segment to the snake
-   */
-  private addRealisticSegment(position: Vector3): void {
-    const segmentIndex = this.segments.length;
-    this.createRealisticSegment(segmentIndex, position.x, position.y, position.z);
-  }
-
-  /**
-   * Make the snake grow on next move
-   */
   grow(): void {
     this.isGrowing = true;
   }
 
-  /**
-   * Trigger a short pulse animation after eating food
-   */
   triggerEatAnimation(): void {
     this.eatPulseTimeRemaining = this.eatPulseDuration;
   }
 
-  /**
-   * Set the snake's direction
-   */
   setDirection(direction: Direction): void {
-    // Prevent immediate direction reversal
     if (!this.isOppositeDirection(direction, this.direction)) {
       this.nextDirection = direction;
     }
   }
 
-  /**
-   * Check if new direction is opposite to current direction
-   */
   private isOppositeDirection(newDir: Direction, currentDir: Direction): boolean {
-    const opposites: Record<Direction, Direction> = {
+    const opposites: Record<string, Direction> = {
       [Direction.FORWARD]: Direction.BACKWARD,
       [Direction.BACKWARD]: Direction.FORWARD,
       [Direction.LEFT]: Direction.RIGHT,
-      [Direction.RIGHT]: Direction.LEFT,
-      [Direction.UP]: Direction.DOWN,
-      [Direction.DOWN]: Direction.UP
+      [Direction.RIGHT]: Direction.LEFT
     };
-
     return opposites[newDir] === currentDir;
   }
 
-  /**
-   * Check collision with snake body
-   */
   checkSelfCollision(): boolean {
     const head = this.segments[0];
-    
     for (let i = 1; i < this.segments.length; i++) {
       if (head.position.distanceTo(this.segments[i].position) < this.segmentSize / 2) {
         return true;
       }
     }
-    
     return false;
   }
 
-  /**
-   * Check collision with arena walls
-   */
   checkWallCollision(): boolean {
     const head = this.segments[0];
-    const boundary = 20; // Arena boundary (half of 40)
-    
-    return (
-      Math.abs(head.position.x) > boundary ||
-      Math.abs(head.position.z) > boundary
-    );
+    const boundary = 20; 
+    return (Math.abs(head.position.x) > boundary || Math.abs(head.position.z) > boundary);
   }
 
-  /**
-   * Check collision with food
-   */
   checkFoodCollision(foodPosition: Vector3): boolean {
-    const head = this.segments[0];
-    return head.position.distanceTo(foodPosition) < this.segmentSize;
+    return this.segments[0].position.distanceTo(foodPosition) < this.segmentSize;
   }
 
-  /**
-   * Get head position
-   */
   getHeadPosition(): Vector3 {
-    return this.segments[0].position.clone();
+    return this.visualSegments[0].clone(); // Visual position for camera to follow closely
   }
 
-  /**
-   * Get all segment positions
-   */
   getSegmentPositions(): Vector3[] {
-    return this.segments.map(segment => segment.position.clone());
+    return this.segments.map(s => s.position.clone()); // Logical positions for food spawn check
   }
 
-  /**
-   * Reset snake to initial state
-   */
   reset(): void {
-    // Remove all segments from scene
-    this.segments.forEach(segment => {
-      this.snakeGroup.remove(segment.mesh);
-      segment.mesh.geometry.dispose();
-      if (segment.mesh.material instanceof MeshStandardMaterial) {
-        segment.mesh.material.dispose();
-        // Dispose textures
-        if (segment.mesh.material.map) {
-          segment.mesh.material.map.dispose();
-        }
-        if (segment.mesh.material.normalMap) {
-          segment.mesh.material.normalMap.dispose();
-        }
-      }
-    });
-    
     this.segments = [];
+    this.visualSegments = [];
     this.direction = Direction.RIGHT;
     this.nextDirection = Direction.RIGHT;
     this.isGrowing = false;
     this.moveTimer = 0;
     this.eatPulseTimeRemaining = 0;
-    this.headLight.intensity = this.baseHeadLightIntensity;
-    
-    // Reinitialize
+    this.isDashing = false;
+    if (this.tubeMesh && this.tubeMesh.geometry) {
+        this.tubeMesh.geometry.dispose();
+    }
+    this.snakeGroup.remove(this.tubeMesh);
+    if(this.headLight) {
+        this.scene.remove(this.headLight);
+    }
     this.initialize(3);
   }
 
-  /**
-   * Cleanup resources
-   */
   destroy(): void {
-    this.segments.forEach(segment => {
-      this.snakeGroup.remove(segment.mesh);
-      segment.mesh.geometry.dispose();
-      if (segment.mesh.material instanceof MeshStandardMaterial) {
-        segment.mesh.material.dispose();
-        // Dispose textures
-        if (segment.mesh.material.map) {
-          segment.mesh.material.map.dispose();
-        }
-        if (segment.mesh.material.normalMap) {
-          segment.mesh.material.normalMap.dispose();
-        }
-      }
-    });
-    
-    // Clean up head light
-    if (this.headLight) {
-      this.scene.remove(this.headLight);
+    this.snakeGroup.remove(this.tubeMesh);
+    if (this.tubeMesh && this.tubeMesh.geometry) {
+        this.tubeMesh.geometry.dispose();
     }
-    
-    // Remove snake group
+    if (this.tubeMesh && this.tubeMesh.material instanceof MeshStandardMaterial) {
+       this.tubeMesh.material.dispose();
+    }
+    if (this.texture) {
+        this.texture.dispose();
+    }
+    if (this.headLight) this.scene.remove(this.headLight);
     this.scene.remove(this.snakeGroup);
-    
     this.segments = [];
+    this.visualSegments = [];
     this.clear();
   }
 }

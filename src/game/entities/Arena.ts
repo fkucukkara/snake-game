@@ -6,7 +6,9 @@ import {
   Color,
   BoxGeometry,
   RepeatWrapping,
-  CanvasTexture
+  CanvasTexture,
+  ShaderMaterial,
+  DoubleSide
 } from 'three';
 
 /**
@@ -16,6 +18,7 @@ export class Arena {
   private scene: Scene;
   private floor!: Mesh;
   private walls: Mesh[] = [];
+  private time: number = 0;
 
   constructor(scene: Scene, size: number = 20) {
     this.scene = scene;
@@ -24,114 +27,67 @@ export class Arena {
     this.createWalls(size);
   }
 
-  /**
-   * Create a modern grid floor texture with neon accents
-   */
-  private createFloorTexture(): CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    
-    const context = canvas.getContext('2d')!;
-    
-    // Modern dark blue-purple base
-    const gradient = context.createLinearGradient(0, 0, 512, 512);
-    gradient.addColorStop(0, '#0a0e1a');
-    gradient.addColorStop(0.5, '#1a1f2e');
-    gradient.addColorStop(1, '#0a0e1a');
-    
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 512, 512);
-    
-    // Draw grid pattern with neon cyan lines
-    const gridSize = 32;
-    context.strokeStyle = 'rgba(0, 255, 255, 0.3)'; // Cyan grid lines
-    context.lineWidth = 1;
-    
-    // Vertical lines
-    for (let x = 0; x <= 512; x += gridSize) {
-      context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, 512);
-      context.stroke();
-    }
-    
-    // Horizontal lines
-    for (let y = 0; y <= 512; y += gridSize) {
-      context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(512, y);
-      context.stroke();
-    }
-    
-    // Highlight major grid lines (every 4th line)
-    context.strokeStyle = 'rgba(0, 255, 255, 0.5)';
-    context.lineWidth = 2;
-    
-    for (let x = 0; x <= 512; x += gridSize * 4) {
-      context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, 512);
-      context.stroke();
-    }
-    
-    for (let y = 0; y <= 512; y += gridSize * 4) {
-      context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(512, y);
-      context.stroke();
-    }
-    
-    // Add subtle glow dots at intersections
-    for (let x = 0; x <= 512; x += gridSize * 4) {
-      for (let y = 0; y <= 512; y += gridSize * 4) {
-        context.fillStyle = 'rgba(0, 255, 255, 0.2)';
-        context.beginPath();
-        context.arc(x, y, 2, 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-    
-    return new CanvasTexture(canvas);
-  }
+
 
   /**
    * Create the arena floor with natural appearance
    */
   private createFloor(size: number): void {
-    const geometry = new PlaneGeometry(size, size, 32, 32);
+    const geometry = new PlaneGeometry(size, size, 1, 1);
     
-    // Add subtle height variations to make it more natural
-    const vertices = geometry.attributes.position.array as Float32Array;
-    for (let i = 0; i < vertices.length; i += 3) {
-      // Add small random height variations
-      vertices[i + 1] += (Math.random() - 0.5) * 0.1;
-    }
-    geometry.attributes.position.needsUpdate = true;
-    geometry.computeVertexNormals(); // Recalculate normals after height changes
-    
-    // Create a procedural texture for natural ground
-    const floorTexture = this.createFloorTexture();
-    floorTexture.wrapS = RepeatWrapping;
-    floorTexture.wrapT = RepeatWrapping;
-    floorTexture.repeat.set(3, 3);
-    
-    const material = new MeshStandardMaterial({
-      color: new Color(0x1a1f2e),
-      map: floorTexture,
-      roughness: 0.3, // Smooth, reflective surface
-      metalness: 0.7, // Metallic appearance
-      emissive: new Color(0x001122), // Subtle cyan glow
-      emissiveIntensity: 0.15,
-      envMapIntensity: 0.8 // Strong environment reflections for modern look
+    const material = new ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color1: { value: new Color(0x0a0e1a) }, // Dark background
+        color2: { value: new Color(0x00ffff) }, // Cyan grid lines
+        gridSize: { value: size / 2 } // number of grid blocks
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color1;
+        uniform vec3 color2;
+        uniform float gridSize;
+        varying vec2 vUv;
+        
+        void main() {
+           vec2 grid = fract(vUv * gridSize);
+           // draw grid lines with anti-aliasing approximation via smoothstep
+           float lineX = smoothstep(0.0, 0.05, grid.x) * smoothstep(1.0, 0.95, grid.x);
+           float lineY = smoothstep(0.0, 0.05, grid.y) * smoothstep(1.0, 0.95, grid.y);
+           float line = 1.0 - (lineX * lineY);
+           
+           // Center pulse glow
+           float centerDist = length(vUv - vec2(0.5));
+           float pulse = max(0.0, sin(time * 3.0 - centerDist * 15.0));
+           pulse = pow(pulse, 2.0); // Make it sharper
+           
+           vec3 finalColor = mix(color1, color2 * (0.8 + pulse), line);
+           gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `,
+      side: DoubleSide
     });
     
     this.floor = new Mesh(geometry, material);
-    this.floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    this.floor.rotation.x = -Math.PI / 2;
     this.floor.position.y = -0.5;
     this.floor.receiveShadow = true;
     
     this.scene.add(this.floor);
+  }
+
+  update(deltaTime: number): void {
+    this.time += deltaTime * 0.001; // convert to seconds
+    if (this.floor && this.floor.material instanceof ShaderMaterial) {
+      this.floor.material.uniforms.time.value = this.time;
+    }
   }
 
   /**

@@ -51,6 +51,9 @@ export class InputManager extends EventManager {
    */
   private onKeyUp(event: KeyboardEvent): void {
     this.keys.delete(event.code);
+    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+      this.emit('dash_end');
+    }
   }
 
   /**
@@ -60,7 +63,7 @@ export class InputManager extends EventManager {
     const gameKeys = [
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-      'Space', 'KeyM'
+      'Space', 'KeyM', 'ShiftLeft', 'ShiftRight'
     ];
     return gameKeys.includes(key);
   }
@@ -93,6 +96,10 @@ export class InputManager extends EventManager {
         break;
       case 'KeyM':
         this.emit('music_toggle');
+        break;
+      case 'ShiftLeft':
+      case 'ShiftRight':
+        this.emit('dash_start');
         break;
     }
 

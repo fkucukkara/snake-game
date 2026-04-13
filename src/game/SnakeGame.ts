@@ -88,6 +88,18 @@ export class SnakeGame {
       this.audioManager.toggleMute();
     });
 
+    this.inputManager.on('dash_start', () => {
+      if (this.gameState === GameState.PLAYING) {
+        this.snake.setDash(true);
+      }
+    });
+
+    this.inputManager.on('dash_end', () => {
+      if (this.gameState === GameState.PLAYING) {
+        this.snake.setDash(false);
+      }
+    });
+
   // Snake events
     this.snake.on('collision', () => {
       // Create collision particle effect
@@ -262,6 +274,9 @@ export class SnakeGame {
 
     // Update particle system
     this.particles.update(deltaTime * 0.001);
+
+    // Update arena shader
+    this.arena.update(deltaTime);
 
     // Update camera to follow snake head
     this.renderer.updateCamera(this.snake.getHeadPosition());

@@ -25,6 +25,8 @@ export class Renderer {
   private cameraShakeStartTime: number = 0;
   private cameraShakeDuration: number = 0;
   private cameraShakeIntensity: number = 0;
+  private previousTargetPosition: Vector3 = new Vector3();
+  private cameraVelocity: Vector3 = new Vector3();
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ 
@@ -154,7 +156,18 @@ export class Renderer {
    * Update camera position (for following snake)
    */
   updateCamera(targetPosition: Vector3): void {
-    const newPosition = targetPosition.clone().add(this.cameraOffset);
+    // Calculate velocity for swooping effect
+    const velocity = targetPosition.clone().sub(this.previousTargetPosition);
+    if (velocity.lengthSq() > 0.0001) {
+        this.cameraVelocity.lerp(velocity, 0.05);
+    }
+    this.previousTargetPosition.copy(targetPosition);
+
+    // Apply a dynamically shifting offset pushing camera ahead of movement slightly
+    const dynamicOffset = new Vector3(-this.cameraVelocity.x * 2.5, 0, -this.cameraVelocity.z * 2.5);
+    const targetWithSwoop = targetPosition.clone().add(dynamicOffset);
+
+    const newPosition = targetWithSwoop.clone().add(this.cameraOffset);
     const currentShakeOffset = this.getCameraShakeOffset();
     newPosition.add(currentShakeOffset);
     
@@ -170,9 +183,14 @@ export class Renderer {
     this.camera.position.lerp(newPosition, adaptiveLerp);
     
     // Look at target with slight offset for better view
-    const lookAtTarget = targetPosition.clone();
+    const lookAtTarget = targetWithSwoop.clone();
     lookAtTarget.y += 1;
     this.camera.lookAt(lookAtTarget);
+
+    // Apply tilt based on lateral movement relative to camera
+    // We can do a slight Z rotation (roll) for dynamic feel
+    const sidewaysMotion = this.cameraVelocity.clone().cross(new Vector3(0, 1, 0)).dot(this.camera.getWorldDirection(new Vector3()));
+    this.camera.rotateZ(sidewaysMotion * 0.05);
   }
 
   /**
